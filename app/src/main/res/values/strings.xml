@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">InstructaCon</string>
+    <string name="title_activity_main">Main Activity</string>
+    <string name="title_activity_manager">Manager Mode</string>
+    <string name="title_activity_driver">Driver Mode</string>
+    <string name="title_activity_pairing">PairingActivity</string>
+</resources>
