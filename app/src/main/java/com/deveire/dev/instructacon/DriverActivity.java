@@ -1,15 +1,10 @@
 package com.deveire.dev.instructacon;
 
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
-import android.bluetooth.BluetoothSocket;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,7 +12,6 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.BitmapFactory;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -29,7 +23,6 @@ import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.speech.tts.Voice;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -67,16 +60,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 
 public class DriverActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>
 {
@@ -101,6 +92,9 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     private TextToSpeech toSpeech;
     private String speechInText;
     private HashMap<String, String> endOfSpeakIndentifier;
+
+    private Timer adSwapTimer;
+    private int currentAdIndex;
 
     //[BLE Variables]
     private String storedScannerAddress;
@@ -221,7 +215,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         //scanKegButton = (Button) findViewById(R.id.scanKegButton);
 
         adImageView = (ImageView) findViewById(R.id.addImageView);
-        adImageView.setImageResource(R.drawable.rabbit_ad);
+        adImageView.setImageResource(R.drawable.drinkaware_ad);
         adImageView.setVisibility(View.VISIBLE);
 
 
@@ -368,6 +362,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                                 public void run()
                                 {
                                     adImageView.setVisibility(View.VISIBLE);
+                                    alertDataText.setText("No Instructions.");
                                 }
                             });
                         }
@@ -387,6 +382,35 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         currentUID = "";
         currentStationID = "bathroom1";
         nameEditText.setText(currentStationID);
+
+
+        //+++[Ad Swapping Setup]
+        currentAdIndex = 1;
+
+        adSwapTimer = new Timer("adSwapTimer");
+        adSwapTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Log.i("Ad Update", "Changing ad");
+                        switch (currentAdIndex)
+                        {
+                            case 1: adImageView.setImageResource(R.drawable.drinkaware_awareness_1); currentAdIndex++; break;
+                            case 2: adImageView.setImageResource(R.drawable.drinkaware_ad2); currentAdIndex = 1; break;
+                        }
+                    }
+                });
+
+            }
+        }, 0, 20000);
+        //++++[/Ad Swapping Setup]
+
 
         setupTileScanner();
         //setupBluetoothScanner();
@@ -455,6 +479,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             mScanner.stopScan();
         }
 
+        adSwapTimer.cancel();
+        adSwapTimer.purge();
 
         //headsetTimer.cancel();
         //headsetTimer.purge();
@@ -668,18 +694,18 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             {
                 toSpeech.speak("You have no new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
                 speechInText = "You have no new alerts:\n";
+                speechInText = "You have no new alerts:\n--------------------------------------------------------\n";
             }
             else
             {
                 toSpeech.speak("You have new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-                speechInText = "You have new alerts:\n";
+                speechInText = "You have new alerts:\n--------------------------------------------------------\n";
                 for (String aAlert : inAlerts)
                 {
                     toSpeech.speak(aAlert, TextToSpeech.QUEUE_ADD, null, null);
                     speechInText += "\n" + aAlert + "\n";
                 }
             }
-            speechInText += "--------------------------------------------------------\n";
             speakInstructions(currentUID);
         }
     }
@@ -691,21 +717,20 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             switch (uidIn)
             {
                 case "0413b3caa74a81":
-                    toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString(), TextToSpeech.QUEUE_ADD, null, "instruct1");
-                    speechInText += "Here are your instructions, Employee Number " + uidIn.toString() + ":\n";
-                    toSpeech.speak(" 1. Please replace the toilet paper.", TextToSpeech.QUEUE_ADD, null, "instruct2");
-                    speechInText += "\n1. Please replace the toilet paper.\n";
-                    toSpeech.speak(" 2. Replace the soap.", TextToSpeech.QUEUE_ADD, null, "instruct3");
-                    speechInText += "\n2. Replace the soap.\n";
-                    toSpeech.speak(" 3. Go to the pub, grab a pint,, and wait for this whooole thing to blow over.", TextToSpeech.QUEUE_ADD, null, "instruct4");
-                    speechInText += "\n3. Go to the pub, grab a pint, and wait for this whole thing to blow over.\n";
+                    speakDailyBathroomInstructions(uidIn);
                     break;
+
                 case "0433bf3aa94a81":
                     toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString() + " , ", TextToSpeech.QUEUE_ADD, null, "instruct1");
-                    speechInText += "Here are your instructions, Employee Number " + uidIn.toString() + ":\n";
+                    speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
                     toSpeech.speak(" 1. Please ask your supervisor for instructions.", TextToSpeech.QUEUE_ADD, null, "instruct2");
                     speechInText += "\n1. Please ask your supervisor for instructions.\n";
                     break;
+
+                case "046e226a9a3184":
+                    speakDailySecurityInstructions(uidIn);
+                    break;
+
                 default:
                     toSpeech.speak("Your ID, " + uidIn.toString() + ", is not on record,", TextToSpeech.QUEUE_ADD, null, "instruct1");
                     toSpeech.speak("  please report to your supervisor.", TextToSpeech.QUEUE_ADD, null, "instruct2");
@@ -715,6 +740,102 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "End");
             alertDataText.setText(speechInText);
 
+        }
+    }
+
+    public void speakDailyBathroomInstructions(String uidIn)
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString(), TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
+            toSpeech.speak(" 1. Check slash change the toilet paper.", TextToSpeech.QUEUE_ADD, null, "instruct2");
+            speechInText += "\n1. Check/Change the toilet paper.\n";
+            toSpeech.speak(" 2. Mop the floor.", TextToSpeech.QUEUE_ADD, null, "instruct3");
+            speechInText += "\n2. Mop the floor.\n";
+            toSpeech.speak(" 3. Empty the Trash.", TextToSpeech.QUEUE_ADD, null, "instruct4");
+            speechInText += "\n3. Empty the Trash.\n";
+            toSpeech.speak(" 4. Wipe the Mirror", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 4. Wipe the Mirror.\n";
+            toSpeech.speak(" 5. Clean the Drains", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 5. Clean the Drains.\n";
+            toSpeech.speak(" 6. Change the Towels", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 6. Change the Towels.\n";
+
+            Calendar aCalender = Calendar.getInstance();
+            toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
+            switch (aCalender.get(Calendar.DAY_OF_WEEK))
+            {
+                case Calendar.MONDAY:
+                    toSpeech.speak(" 7. Clean the Faucets", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Clean the Faucets.\n";
+                    break;
+
+                case Calendar.TUESDAY:
+                    toSpeech.speak(" 7. Wash the Rugs", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Wash the Rugs.\n";
+                    break;
+
+                case Calendar.WEDNESDAY:
+                    toSpeech.speak(" 7. Refill the medicine cabinet", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Refill the medicine cabinet.\n";
+                    break;
+
+                case Calendar.THURSDAY:
+                    toSpeech.speak(" 7. Wash the walls", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Wash the walls.\n";
+                    break;
+
+                case Calendar.FRIDAY:
+                    toSpeech.speak(" 7. Scrub the floors and clean the grout", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Scrubs the floors and clean the grout.\n";
+                    break;
+                case Calendar.SATURDAY:
+                    toSpeech.speak(" 7. Clean the toilet bowls, the sinks and the tubs.", TextToSpeech.QUEUE_ADD, null, null);
+                    speechInText += "\n 7. Clean the toilet bowls, the sinks and the tubs.\n";
+                    break;
+            }
+
+            toSpeech.speak(" Monthly Tasks Remaing: ", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n\n Monthly Tasks Remaing:\n--------------------------------------------------------\n";
+            toSpeech.speak(" 8. Clean the Windows and Vents.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 8. Clean the Windows and Vents.\n";
+            toSpeech.speak(" 9. Clean the showers.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 9. Clean the showers.\n";
+            toSpeech.speak(" 10. Dust the ceilings.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 10. Dust the ceilings.\n";
+            toSpeech.speak(" 11. Wipe the front and back of the doors.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 11. Wipe the front and back of the doors.\n";
+            toSpeech.speak(" 12. Purge the Toiletries.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 12. Purge the Toiletries.\n";
+            toSpeech.speak(" 13. Wash the shower curtains.", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 13. Wash the shower curtains.\n";
+        }
+    }
+
+    public void speakDailySecurityInstructions(String uidIn)
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString(), TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
+            toSpeech.speak(" 1. Is the bathroom clean?", TextToSpeech.QUEUE_ADD, null, "instruct2");
+            speechInText += "\n1. Is the bathroom clean?\n";
+            toSpeech.speak(" 2. Is the water running?", TextToSpeech.QUEUE_ADD, null, "instruct3");
+            speechInText += "\n2. Is the water running?\n";
+            toSpeech.speak(" 3. Are any of the stalls locked?", TextToSpeech.QUEUE_ADD, null, "instruct4");
+            speechInText += "\n3. Are any of the stalls locked?\n";
+            toSpeech.speak(" 4. Have you collected your bribe money?", TextToSpeech.QUEUE_ADD, null, null);
+            speechInText += "\n 4. Have you collected your bribe money?\n";
+
+            Calendar aCalender = Calendar.getInstance();
+            //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
+            //speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
+            switch (aCalender.get(Calendar.DAY_OF_WEEK))
+            {
+
+            }
         }
     }
 
@@ -1577,46 +1698,56 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
         if(result != null)
         {
-            try
+            // matches uses //( as matches() takes a regular expression, where ( is a special character.
+            if(!result.matches("failed to connect to /192.168.1.188 \\(port 8080\\) after 3000ms: isConnected failed: ECONNREFUSED \\(Connection refused\\)"))
             {
-                JSONArray jsonResultFromServer = new JSONArray(result);
-
-                Log.i("Network UPDATE", "Non null result received." );
-                //mapText.setText("We're good");
-                if(pingingServerFor_alertData)
+                Log.e("Download", result);
+                try
                 {
-                    pingingServerFor_alertData = false;
-                    alertDataText.setText(result);
-                    ArrayList<String> results = new ArrayList<String>();
-                    for(int i = 0; i < jsonResultFromServer.length(); i++)
+                    JSONArray jsonResultFromServer = new JSONArray(result);
+
+                    Log.i("Network UPDATE", "Non null result received.");
+                    //mapText.setText("We're good");
+                    if (pingingServerFor_alertData)
                     {
-                        results.add(jsonResultFromServer.getJSONObject(i).getString("alert"));
+                        pingingServerFor_alertData = false;
+                        alertDataText.setText(result);
+                        ArrayList<String> results = new ArrayList<String>();
+                        for (int i = 0; i < jsonResultFromServer.length(); i++)
+                        {
+                            results.add(jsonResultFromServer.getJSONObject(i).getString("alert"));
+                        }
+
+                        //mapText.setText(result);
+                        speakAlerts(results);
                     }
-
-                    //mapText.setText(result);
-                    speakAlerts(results);
-                }
-                else
-                {
-                    if (itemID == 0 && !result.matches(""))//if app has no assigned id, receive id from servlet.
+                    else
                     {
-                        try
+                        if (itemID == 0 && !result.matches(""))//if app has no assigned id, receive id from servlet.
                         {
-                            JSONArray jin = new JSONArray(result);
-                            JSONObject obj = jin.getJSONObject(0);
-                            itemID = obj.getInt("id");
-                        } catch (JSONException e)
-                        {
-                            Log.e("JSON ERROR", "Error retrieving id from servlet with exception: " + e.toString());
+                            try
+                            {
+                                JSONArray jin = new JSONArray(result);
+                                JSONObject obj = jin.getJSONObject(0);
+                                itemID = obj.getInt("id");
+                            } catch (JSONException e)
+                            {
+                                Log.e("JSON ERROR", "Error retrieving id from servlet with exception: " + e.toString());
+                            }
                         }
                     }
                 }
-            }
-            catch (JSONException e)
-            {
-                Log.e("Network Update", "ERROR in Json: " + e.toString());
-            }
+                catch (JSONException e)
+                {
+                    Log.e("Network Update", "ERROR in Json: " + e.toString());
+                }
 
+            }
+            else
+            {
+                mapText.setText("Error: network unavaiable");
+                Log.e("Network UPDATE", "Error: network unavaiable, error: " + result);
+            }
         }
         else
         {
