@@ -684,16 +684,16 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
-    public void speakAlerts(ArrayList<String> inAlerts)
+    private void speakAlerts(ArrayList<String> inAlerts)
     {
         speechInText = "";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             adImageView.setVisibility(View.INVISIBLE);
-            if (inAlerts.size() == 0)
+            //TODO: REMOVE TEMPORARY NO SECURITY ALERTS CLAUSE!
+            if (inAlerts.size() == 0 || (currentUID.matches("046e226a9a3184")))
             {
                 toSpeech.speak("You have no new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-                speechInText = "You have no new alerts:\n";
                 speechInText = "You have no new alerts:\n--------------------------------------------------------\n";
             }
             else
@@ -706,6 +706,18 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                     speechInText += "\n" + aAlert + "\n";
                 }
             }
+            speakInstructions(currentUID);
+        }
+    }
+
+    private void speakNetworkError()
+    {
+        speechInText = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            adImageView.setVisibility(View.INVISIBLE);
+            toSpeech.speak("Failed to connect to Server. Alerts Unavaiable.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
+            speechInText = "Failed to connect to Server. Alerts Unavaiable. \n--------------------------------------------------------\n";
             speakInstructions(currentUID);
         }
     }
@@ -1747,12 +1759,14 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             {
                 mapText.setText("Error: network unavaiable");
                 Log.e("Network UPDATE", "Error: network unavaiable, error: " + result);
+                speakNetworkError();
             }
         }
         else
         {
             mapText.setText("Error: network unavaiable");
             Log.e("Network UPDATE", "Error: network unavaiable");
+            speakNetworkError();
         }
 
         Log.e("Download Output", "" + result);
