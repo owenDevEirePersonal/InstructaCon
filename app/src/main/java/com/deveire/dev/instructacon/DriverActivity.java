@@ -96,6 +96,11 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     private Timer adSwapTimer;
     private int currentAdIndex;
 
+    private ArrayList<String> idsOfTypeSecurity;
+    private ArrayList<String> idsOfTypeJanitor;
+    private final int ID_TYPE_Janitor = 1;
+    private final int ID_TYPE_Security = 2;
+
     //[BLE Variables]
     private String storedScannerAddress;
     private final static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb"; //UUID for changing notify or not
@@ -422,6 +427,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
 
         //setupHeadset();
+        setupTypesOfID();
+
 
         restoreSavedValues(savedInstanceState);
 
@@ -572,6 +579,22 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
+    private void retrieveSecurityAlerts(String stationIDin)
+    {
+        if(!stationIDin.matches(""))
+        {
+            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin;
+            //lat and long are doubles, will cause issue? nope
+            pingingServerFor_alertData = true;
+            Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
+            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+        }
+        else
+        {
+            Log.e("Network Update", "Error in RetreiveAlters, invalid uuid entered");
+        }
+    }
+
     private void scanKeg(String kegIDin)
     {
         if(!kegIDin.matches(""))
@@ -667,21 +690,41 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }*/
 
-    private void retrieveKegData(String kegIDin)
+    private void setupTypesOfID()
     {
-        if(!kegIDin.matches(""))
+        idsOfTypeJanitor = new ArrayList<String>();
+        idsOfTypeSecurity = new ArrayList<String>();
+
+        idsOfTypeJanitor.add("0413b3caa74a81");
+        idsOfTypeJanitor.add("0433bf3aa94a81");
+
+        idsOfTypeSecurity.add("046e226a9a3184");
+    }
+
+    //returns the type of tag in numrical form, given the UID of the tag swiped
+    private int getTypeFromUID(String inUID)
+    {
+        Log.i("setupSpeak", "Getting type of tag scanned");
+        for (String aUID: idsOfTypeJanitor)
         {
-            kegIDin = kegIDin.replace(' ', '_');
-            serverURL = serverIPAddress + "?request=getkegdata" + "&kegid=" + kegIDin;
-            //lat and long are doubles, will cause issue? nope
-            Log.i("Network Update", "Attempting to start download from retrieveKegData " + serverURL);
-            pingingServerFor_alertData = true;
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+            if(aUID.matches(inUID))
+            {
+                Log.i("setupSpeak", "Type of Tag = Janitor");
+                return ID_TYPE_Janitor;
+            }
         }
-        else
+
+        for (String aUID: idsOfTypeSecurity)
         {
-            Log.e("kegData Error", "invalid uuid entered. " + kegIDin);
+            if(aUID.matches(inUID))
+            {
+                Log.i("setupSpeak", "Type of Tag = Security");
+                return ID_TYPE_Security;
+            }
         }
+
+        Log.i("setupSpeak", "Type of Tag = Unknown");
+        return 0;
     }
 
     private void speakAlerts(ArrayList<String> inAlerts)
@@ -690,8 +733,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             adImageView.setVisibility(View.INVISIBLE);
-            //TODO: REMOVE TEMPORARY NO SECURITY ALERTS CLAUSE!
-            if (inAlerts.size() == 0 || (currentUID.matches("046e226a9a3184")))
+            if (inAlerts.size() == 0)
             {
                 toSpeech.speak("You have no new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
                 speechInText = "You have no new alerts:\n--------------------------------------------------------\n";
@@ -726,27 +768,18 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
-            switch (uidIn)
+            switch (getTypeFromUID(uidIn))
             {
-                case "0413b3caa74a81":
+                case ID_TYPE_Janitor:
                     speakDailyBathroomInstructions(uidIn);
                     break;
 
-                case "0433bf3aa94a81":
-                    toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString() + " , ", TextToSpeech.QUEUE_ADD, null, "instruct1");
-                    speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
-                    toSpeech.speak(" 1. Please ask your supervisor for instructions.", TextToSpeech.QUEUE_ADD, null, "instruct2");
-                    speechInText += "\n1. Please ask your supervisor for instructions.\n";
-                    break;
-
-                case "046e226a9a3184":
+                case ID_TYPE_Security:
                     speakDailySecurityInstructions(uidIn);
                     break;
 
                 default:
-                    toSpeech.speak("Your ID, " + uidIn.toString() + ", is not on record,", TextToSpeech.QUEUE_ADD, null, "instruct1");
-                    toSpeech.speak("  please report to your supervisor.", TextToSpeech.QUEUE_ADD, null, "instruct2");
-                    speechInText += "\nYour id, " + uidIn.toString() + ", is not on record, please report to your supervisor.\n";
+                    speakDailyUnknownInstructions(uidIn);
                     break;
             }
             toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "End");
@@ -759,8 +792,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
-            toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString(), TextToSpeech.QUEUE_ADD, null, "instruct1");
-            speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
+            toSpeech.speak("Here are your instructions, Sanitation Engineer " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nHere are your instructions, Sanitation Engineer " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
             toSpeech.speak(" 1. Check slash change the toilet paper.", TextToSpeech.QUEUE_ADD, null, "instruct2");
             speechInText += "\n1. Check/Change the toilet paper.\n";
             toSpeech.speak(" 2. Mop the floor.", TextToSpeech.QUEUE_ADD, null, "instruct3");
@@ -809,20 +842,20 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                     break;
             }
 
-            toSpeech.speak(" Monthly Tasks Remaing: ", TextToSpeech.QUEUE_ADD, null, null);
+            toSpeech.speak(" Monthly Tasks Remaining: ", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n\n Monthly Tasks Remaing:\n--------------------------------------------------------\n";
             toSpeech.speak(" 8. Clean the Windows and Vents.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 8. Clean the Windows and Vents.\n";
             toSpeech.speak(" 9. Clean the showers.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 9. Clean the showers.\n";
-            toSpeech.speak(" 10. Dust the ceilings.", TextToSpeech.QUEUE_ADD, null, null);
+            /*toSpeech.speak(" 10. Dust the ceilings.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 10. Dust the ceilings.\n";
             toSpeech.speak(" 11. Wipe the front and back of the doors.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 11. Wipe the front and back of the doors.\n";
             toSpeech.speak(" 12. Purge the Toiletries.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 12. Purge the Toiletries.\n";
             toSpeech.speak(" 13. Wash the shower curtains.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 13. Wash the shower curtains.\n";
+            speechInText += "\n 13. Wash the shower curtains.\n";*/
         }
     }
 
@@ -830,16 +863,14 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
-            toSpeech.speak("Here are your instructions, Employee Number: " + uidIn.toString(), TextToSpeech.QUEUE_ADD, null, "instruct1");
-            speechInText += "\nHere are your instructions, Employee Number " + uidIn.toString() + ":\n--------------------------------------------------------\n";
+            toSpeech.speak("Here are your instructions, Security Guard " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nHere are your instructions, Security Guard " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
             toSpeech.speak(" 1. Is the bathroom clean?", TextToSpeech.QUEUE_ADD, null, "instruct2");
             speechInText += "\n1. Is the bathroom clean?\n";
             toSpeech.speak(" 2. Is the water running?", TextToSpeech.QUEUE_ADD, null, "instruct3");
             speechInText += "\n2. Is the water running?\n";
             toSpeech.speak(" 3. Are any of the stalls locked?", TextToSpeech.QUEUE_ADD, null, "instruct4");
             speechInText += "\n3. Are any of the stalls locked?\n";
-            toSpeech.speak(" 4. Have you collected your bribe money?", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 4. Have you collected your bribe money?\n";
 
             Calendar aCalender = Calendar.getInstance();
             //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
@@ -848,6 +879,36 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             {
 
             }
+        }
+    }
+
+    public void speakDailyUnknownInstructions(String uidIn)
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            speechInText = "";
+            adImageView.setVisibility(View.INVISIBLE);
+            toSpeech.speak("Your ID, " + uidIn.toString() + ", is not on record,", TextToSpeech.QUEUE_ADD, null, "instruct1");
+            toSpeech.speak("  please report to your supervisor.", TextToSpeech.QUEUE_ADD, null, "instruct2");
+            speechInText += "\nYour id, " + uidIn.toString() + ", is not on record, please report to your supervisor.\n";
+        }
+    }
+
+    private String getNameFromUID(String inUID)
+    {
+        switch (inUID)
+        {
+            case "0413b3caa74a81":
+                return "Greg Alderman";
+
+            case "0433bf3aa94a81":
+                return "Frank Grimes";
+
+            case "046e226a9a3184":
+                return "Cloe Fitzgerald";
+
+            default:
+                return "Number " + inUID;
         }
     }
 
@@ -951,7 +1012,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         uidIsFound = false;
         hasSufferedAtLeastOneFailureToReadUID = false;
 
-        connectToTileScanner();
+        //connection is called from OnResume Anyway
+        //connectToTileScanner();
     }
 
     //Scanner CallBack
@@ -1059,7 +1121,15 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
                         currentUID = outUID.toString();
                         currentStationID = nameEditText.getText().toString();
-                        retrieveAlerts(currentStationID);
+                        switch (getTypeFromUID(currentUID))
+                        {
+                            case ID_TYPE_Janitor: retrieveAlerts(currentStationID); break;
+
+                            case ID_TYPE_Security: retrieveSecurityAlerts(currentStationID); break;
+
+                            default: speakInstructions(currentUID); break;
+                        }
+
                         //TODO: fix this
                     }
                 });
@@ -1558,7 +1628,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             else if (msg.what == 5) {
                 disconnectCnt++;
                 //searchButton.performClick();
-                if(stopAllScans)
+                if(!stopAllScans)
                 {
                     connectToTileScanner();
                 }
@@ -1845,4 +1915,5 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 /*
 
 
- */
+
+  */
