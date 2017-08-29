@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -35,14 +36,17 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 
-public class ManagerActivity extends FragmentActivity implements AdapterView.OnItemSelectedListener, OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, DownloadCallback<String>
+public class ManagerActivity extends FragmentActivity implements DownloadCallback<String>
 {
 
     private GoogleMap mMap;
 
     private TextView mapText;
-    private Spinner itemsSpinner;
-    private EditText countText;
+
+    private EditText stationIDText;
+    private EditText alertTextText;
+    private Button addCleanupAlertButton;
+    private Button addSecurityAlertButton;
 
     private ArrayList<String> itemIdsFromServer;
     private String currentItemID;
@@ -54,24 +58,21 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
     private Location userLocation;
 
     //[Network and periodic location update, Variables]
-    private GoogleApiClient mGoogleApiClient;
-    private Location usersLocation;
-    private int locationScanInterval;
+
 
     private final String SAVED_LOCATION_KEY = "79";
 
     private int pingingServerFor;
 
-    private Handler refreshHandler;
-
     private final int pingingServerFor_ItemIds = 1;
     private final int pingingServerFor_Locations = 2;
     private final int pingingServerFor_Extra_Locations = 3;
     private final int pingingServerFor_Keg_Last_Locations = 4;
+    private final int pingingServerFor_UploadAlert = 5;
     private final int pingingServerFor_Nothing = 0;
 
 
-    private final String serverIPAddress = "http://192.168.1.188:8080/TruckyTrackServlet/TTServlet";
+    private final String serverIPAddress = "http://192.168.1.188:8080/InstructaConServlet/ICServlet";
     //private final String serverIPAddress = "http://api.eirpin.com/api/TTServlet";
     private String serverURL;
     private NetworkFragment aNetworkFragment;
@@ -86,16 +87,33 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manager);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+
 
 
 
         mapText = (TextView) findViewById(R.id.mapText);
-        itemsSpinner = (Spinner) findViewById(R.id.spinner);
-        itemsSpinner.setOnItemSelectedListener(this);
+        addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
+        addSecurityAlertButton = (Button) findViewById(R.id.addSecurityAlertButton);
+        stationIDText = (EditText) findViewById(R.id.stationIDEditText);
+        alertTextText = (EditText) findViewById(R.id.alertTextEditText);
+
+        addSecurityAlertButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                uploadSecurityAlert();
+            }
+        });
+
+        addCleanupAlertButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                uploadCleanupAlert();
+            }
+        });
 
         itemIdsFromServer = new ArrayList<String>();
         allCurrentItemLocations = new ArrayList<LatLng>();
@@ -103,10 +121,6 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
         currentItemID = "";
         numberOfResultsToRetrieve = 10;
 
-        mapText = (TextView) findViewById(R.id.mapText);
-        itemsSpinner = (Spinner) findViewById(R.id.spinner);
-        countText = (EditText) findViewById(R.id.editText);
-        countText.setText("" + numberOfResultsToRetrieve);
 
 
         userLocation = new Location("Truck Manager");
@@ -115,21 +129,10 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
 
         pingingServerFor = pingingServerFor_Nothing;
 
-        refreshHandler = new Handler();
-        startRepeatingRefresh();
-
 
         //0000,0000 is a location in the middle of the atlantic occean south of western africa and unlikely to contain a golf course.
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
 
-        mGoogleApiClient.connect();
-
-        locationScanInterval = 60;//in seconds
 
 
 
@@ -153,146 +156,33 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
     protected void onDestroy()
     {
         super.onDestroy();
-        stopRepeatingRefresh();
-    }
-
-    private void startRepeatingRefresh()
-    {
-        periodicRefresher.run();
-    }
-
-    private void stopRepeatingRefresh()
-    {
-        refreshHandler.removeCallbacks(periodicRefresher);
-    }
-
-    //TODO: Disable this when the user navigates away from the app
-    Runnable periodicRefresher = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                Log.i("Network Update", "Launching Refresh ");
-                serverURL = serverIPAddress + "?request=getitemids";
-                pingingServerFor = pingingServerFor_ItemIds;
-                aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-            }
-            finally
-            {
-                refreshHandler.postDelayed(periodicRefresher, locationScanInterval * 1000);
-            }
-        }
-    };
-
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    @Override
-    public void onMapReady(GoogleMap googleMap)
-    {
-        mMap = googleMap;
-
-        // Add a markers and move the camera
-        //mMap.addMarker(new MarkerOptions().position(new LatLng(userLocation.getLatitude(), userLocation.getLongitude())).title("You"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userLocation.getLatitude(), userLocation.getLongitude()), 7));
-        mMap.setOnCameraIdleListener(new mapScrolledListener());
-        retrieveLocations();
-        //updateMap(false);
-    }
-
-    private void updateMap(boolean clearPrevious)
-    {
-        if(clearPrevious)
-        {
-            mMap.clear();
-        }
-
-        int i = 0;
-        for (LatLng aloc: allCurrentItemLocations)
-        {
-            if(currentItemID.matches("Current Keg Locations") || currentItemID.matches("09-05-2017 Latest") || currentItemID.matches("09-05-2017 All") || currentItemID.matches("10-05-2017 Latest") || currentItemID.matches("10-05-2017 All") || currentItemID.matches("11-05-2017 Latest") || currentItemID.matches("11-05-2017 All"))
-            {
-                mMap.addMarker(new MarkerOptions().position(aloc).title(allCurrentKegIDs.get(i)));
-                Log.i("Map Update", "Placing Keg Marker " + allCurrentKegIDs.get(i) + " at " + aloc.toString());
-            }
-            else
-            {
-                mMap.addMarker(new MarkerOptions().position(aloc).title("Truck 1"));
-                Log.i("Map Update", "Placing Marker at " + aloc.toString()  + "\n");
-            }
-            i++;
-        }
-        //mMap.addMarker(new MarkerOptions().position(new LatLng(userLocation.getLatitude(), userLocation.getLongitude())).title("You"));
-
     }
 
 
 
-    private void retrieveLocations()
+
+
+    private void uploadCleanupAlert()
     {
-        pingingServerFor = pingingServerFor_Locations;
-        serverURL = serverIPAddress + "?request=getinitlocations&id=" + (currentItemID.split(" - ")[0]) + "&count=" + numberOfResultsToRetrieve;
+        pingingServerFor = pingingServerFor_UploadAlert;
+        serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "janitor" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
         //lat and long are doubles, will cause issue? nope
-        Log.i("Network Update", "Attempting to start download from retrievelocations." + serverURL);
+        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
         aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-
-        Log.i("Dropdown Update", "Dropdown select, Loading intial locations for " + (currentItemID.split(" - ")[0]));
     }
 
-    private void retrieveLocations(LatLng centreOfMap, double radiusInMetres)
+    private void uploadSecurityAlert()
     {
-        pingingServerFor = pingingServerFor_Extra_Locations;
-        serverURL = serverIPAddress + "?request=getlocationswithin&id=" + (currentItemID.split(" - ")[0]) + "&lat=" + centreOfMap.latitude + "&lon=" + centreOfMap.longitude + "&radius=" + radiusInMetres;
+        pingingServerFor = pingingServerFor_UploadAlert;
+        serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "security" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
         //lat and long are doubles, will cause issue? nope
-        Log.i("Network Update", "Attempting to start download to retrieve locations(centreOfMap, radiusInMetres)." + serverURL);
+        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
         aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-
-        Log.i("Dropdown Update", "Map Moved, Loading new locations for " + (currentItemID.split(" - ")[0]) + " from centre " + centreOfMap.toString() + " at radius " + radiusInMetres);
     }
 
-    private void retrieveKegLastLocations()
-    {
-        pingingServerFor = pingingServerFor_Keg_Last_Locations;
-        serverURL = serverIPAddress + "?request=getkegslastlocations";
-        //lat and long are doubles, will cause issue? nope
-        Log.i("Network Update", "Attempting to start download from retrieveKegLastLocations. " + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
 
-        Log.i("Dropdown Update", "Dropdown select, Loading retrieveKegLastLocations");
-    }
 
-    private void retrieveKegLastLocationsOnDate(String inDate)
-    {
-        pingingServerFor = pingingServerFor_Keg_Last_Locations;
-        serverURL = serverIPAddress + "?request=getkegslastlocationsonadate&date=" + inDate;
-        //lat and long are doubles, will cause issue? nope
-        Log.i("Network Update", "Attempting to start download from retrieveKegLastLocations. " + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-
-        Log.i("Dropdown Update", "Dropdown select, Loading retrieveKegLastLocations");
-    }
-
-    private void retrieveKegAllLocationsOnDate(String inDate)
-    {
-        pingingServerFor = pingingServerFor_Keg_Last_Locations;
-        serverURL = serverIPAddress + "?request=getkegslastlocationsonadate&date=" + inDate;
-        //lat and long are doubles, will cause issue? nope
-        Log.i("Network Update", "Attempting to start download from retrieveKegLastLocations. " + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-
-        Log.i("Dropdown Update", "Dropdown select, Loading retrieveKegLastLocations");
-    }
-
-    private boolean arrayContains(ArrayList<LatLng> array, LatLng bLatLng)
+    private boolean arrayListContains(ArrayList<LatLng> array, LatLng bLatLng)
     {
         for (LatLng aLatLng: array)
         {
@@ -304,115 +194,9 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
         return false;
     }
 
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int pos, long id)
-    {
-        //[Get currently selected id from dropdown menu]
-        currentItemID = itemIdsFromServer.get(pos);
-        //[/Get currently selected id from dropdown menu]
-
-        //if item selected is not the last item(all kegs) or 2nd last then behave normally
-        if(pos == itemIdsFromServer.size() - 1)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals All Kegs");
-            retrieveKegLastLocations();
-        }
-        else if(pos == itemIdsFromServer.size() - 2)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegLastLocationsOnDate("2017-05-11");
-        }
-        else if(pos == itemIdsFromServer.size() - 3)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegAllLocationsOnDate("2017-05-11");
-        }
-        else if(pos == itemIdsFromServer.size() - 4)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegLastLocationsOnDate("2017-05-10");
-        }
-        else if(pos == itemIdsFromServer.size() - 5)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegAllLocationsOnDate("2017-05-10");
-        }
-        else if(pos == itemIdsFromServer.size() - 6)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegLastLocationsOnDate("2017-05-09");
-        }
-        else if(pos == itemIdsFromServer.size() - 7)
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals 2017-05-10");
-            retrieveKegAllLocationsOnDate("2017-05-09");
-        }
-        else
-        {
-            Log.i("Dropdown Update", "Dropdown select, ItemID now equals " + parent.getItemAtPosition(pos));
-            try
-            {
-                numberOfResultsToRetrieve = Integer.getInteger(countText.getText().toString());
-            } catch (Exception e)
-            {
-                numberOfResultsToRetrieve = 10;
-                countText.setText("" + numberOfResultsToRetrieve);
-            }
-            retrieveLocations();
-        }
-
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent)
-    {
-
-    }
-
-    private void selectItemOnStartup()
-    {
-        //[Get currently selected id from dropdown menu]
-        currentItemID = itemIdsFromServer.get(0);
-        //TODO: replace ID, name system with single string consiting of "id - name"
-        //[/Get currently selected id from dropdown menu]
-
-        try
-        {
-            numberOfResultsToRetrieve = Integer.getInteger(countText.getText().toString());
-        }
-        catch (Exception e)
-        {
-            numberOfResultsToRetrieve = 10;
-            countText.setText("" + numberOfResultsToRetrieve);
-        }
-        retrieveLocations();
-    }
-
 
     //**********[Location Update and server pinging Code]
-    @Override
-    public void onConnectionFailed(ConnectionResult result) {
-        // An unresolvable error has occurred and a connection to Google APIs
-        // could not be established. Display an error message, or handle
-        // the failure silently
 
-        // ...
-    }
-
-    @Override
-    public void onConnected(@Nullable Bundle bundle)
-    {
-        if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            usersLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        }
-    }
-
-    @Override
-    public void onConnectionSuspended(int i)
-    {
-        //put other stuff here
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -424,7 +208,6 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
     @Override
     public void onSaveInstanceState(Bundle savedState)
     {
-        savedState.putParcelable(SAVED_LOCATION_KEY, usersLocation);
         super.onSaveInstanceState(savedState);
     }
 
@@ -432,15 +215,6 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
     {
         if (savedInstanceState != null)
         {
-
-            // Update the value of mCurrentLocation from the Bundle and update the
-            // UI to show the correct latitude and longitude.
-            if (savedInstanceState.keySet().contains(SAVED_LOCATION_KEY))
-            {
-                // Since LOCATION_KEY was found in the Bundle, we can be sure that
-                // mCurrentLocationis not null.
-                usersLocation = savedInstanceState.getParcelable(SAVED_LOCATION_KEY);
-            }
 
         }
     }
@@ -457,57 +231,7 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
                 JSONArray jsonResultFromServer = new JSONArray(result);
                 switch (pingingServerFor)
                 {
-                    case pingingServerFor_ItemIds:
-                        Log.i("Network JSON", "pingingServerFor_ItemIds, lets begin, shall we...");
-                        itemIdsFromServer = new ArrayList<String>();
-                        for(int i = 0; i < jsonResultFromServer.length(); i++)
-                        {
-                            itemIdsFromServer.add(jsonResultFromServer.getJSONObject(i).getString("name"));
-                        }
 
-                        itemIdsFromServer.add("09-05-2017 Latest");
-                        itemIdsFromServer.add("09-05-2017 All");
-                        itemIdsFromServer.add("10-05-2017 Latest");
-                        itemIdsFromServer.add("10-05-2017 All");
-                        itemIdsFromServer.add("11-05-2017 Latest");
-                        itemIdsFromServer.add("11-05-2017 All");
-                        itemIdsFromServer.add("Current Keg Locations");
-
-
-                        ArrayAdapter<String> adapter = new ArrayAdapter<String>(ManagerActivity.this, android.R.layout.simple_spinner_dropdown_item, itemIdsFromServer);
-                        itemsSpinner.setAdapter(adapter);
-
-                        break;
-
-                    case pingingServerFor_Locations:
-                        allCurrentItemLocations = new ArrayList<LatLng>();
-
-                        for(int i = 0; i < jsonResultFromServer.length(); i++)
-                        {
-                            LatLng aloc = new LatLng(jsonResultFromServer.getJSONObject(i).getDouble("lat"), jsonResultFromServer.getJSONObject(i).getDouble("lon"));
-                            allCurrentItemLocations.add(aloc);
-                            Log.i("Boop Test", "BOOP LOCATION LOADED " + aloc.toString());
-                        }
-                        Log.i("Location Update", "Recieved locations.");
-                        updateMap(true);
-                        mapText.setText("Receving Locations");
-
-                        break;
-
-                    case pingingServerFor_Extra_Locations:
-                        allCurrentItemLocations = new ArrayList<LatLng>();
-
-                        for(int i = 0; i < jsonResultFromServer.length(); i++)
-                        {
-                            LatLng aloc = new LatLng(jsonResultFromServer.getJSONObject(i).getDouble("lat"), jsonResultFromServer.getJSONObject(i).getDouble("lon"));
-                            allCurrentItemLocations.add(aloc);
-                        }
-
-                        Log.i("Location Update", "Recieved extra locations.");
-                        updateMap(false);
-                        mapText.setText("Receving Locations");
-
-                        break;
 
                     case pingingServerFor_Keg_Last_Locations:
                         allCurrentItemLocations = new ArrayList<LatLng>();
@@ -521,7 +245,6 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
                             Log.i("Boop Test", "BOOP KEG LOCATION LOADED " + aloc.toString());
                         }
                         Log.i("Location Update", "Recieved locations.");
-                        updateMap(true);
                         mapText.setText("Receving Keg Locations");
 
                         break;
@@ -591,33 +314,7 @@ public class ManagerActivity extends FragmentActivity implements AdapterView.OnI
 
 //**********[/Location Update and server pinging Code]
 
-    class mapScrolledListener implements GoogleMap.OnCameraIdleListener
-    {
-        @Override
-        public void onCameraIdle()
-        {
-            LatLng viewportCentre = mMap.getCameraPosition().target;
 
-            Location a = new Location("");
-            a.setLatitude(mMap.getProjection().getVisibleRegion().latLngBounds.northeast.latitude);
-            a.setLongitude(mMap.getProjection().getVisibleRegion().latLngBounds.northeast.longitude);
-            Location b = new Location("");
-            b.setLatitude(viewportCentre.latitude);
-            b.setLongitude(viewportCentre.longitude);
-            double viewportRadius = a.distanceTo(b);
-
-            //[JURY RIGGED irregular distances between long and lat, solution]
-            //TODO: Replace this system.
-            viewportRadius = Math.max(Math.abs(a.getLatitude() - b.getLatitude()), Math.abs(a.getLongitude() - b.getLongitude()));
-            //[JURY RIGGED irregular distances between long and lat, solution]
-
-            //if the user is looking at the current last known locations of kegs then do nothing, as ALL keg locations are retrieve when the user selects that option. else retrieve the locations within viewport.
-            if(!(currentItemID.matches("Current Keg Locations") || currentItemID.matches("09-05-2017 Latest")  || currentItemID.matches("09-05-2017 All")  || currentItemID.matches("10-05-2017 Latest") || currentItemID.matches("10-05-2017 All") || currentItemID.matches("11-05-2017 Latest") || currentItemID.matches("11-05-2017 All")))
-            {
-                retrieveLocations(viewportCentre, viewportRadius);
-            }
-        }
-    }
 }
 
 
