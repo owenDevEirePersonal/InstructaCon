@@ -567,7 +567,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         if(!stationIDin.matches(""))
         {
-            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin;
+            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin.replace(" ", "_");
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
@@ -583,7 +583,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         if(!stationIDin.matches(""))
         {
-            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin;
+            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_");
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
