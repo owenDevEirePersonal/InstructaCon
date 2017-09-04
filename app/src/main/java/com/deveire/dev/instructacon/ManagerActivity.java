@@ -103,6 +103,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             public void onClick(View v)
             {
                 uploadSecurityAlert();
+                stationIDText.setText("");
+                alertTextText.setText("");
             }
         });
 
@@ -112,6 +114,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             public void onClick(View v)
             {
                 uploadCleanupAlert();
+                stationIDText.setText("");
+                alertTextText.setText("");
             }
         });
 
@@ -166,7 +170,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     {
         pingingServerFor = pingingServerFor_UploadAlert;
         serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "janitor" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
-        //lat and long are doubles, will cause issue? nope
+
+        serverURL = serverURL.replace("\'", "\\\'");
         Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
         aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
     }
@@ -175,7 +180,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     {
         pingingServerFor = pingingServerFor_UploadAlert;
         serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "security" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
-        //lat and long are doubles, will cause issue? nope
+
+        serverURL = serverURL.replace("\'", "\\\'");
         Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
         aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
     }

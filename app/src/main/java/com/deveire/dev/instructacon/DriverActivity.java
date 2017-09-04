@@ -407,7 +407,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                         switch (currentAdIndex)
                         {
                             case 1: adImageView.setImageResource(R.drawable.drinkaware_awareness_1); currentAdIndex++; break;
-                            case 2: adImageView.setImageResource(R.drawable.drinkaware_ad2); currentAdIndex = 1; break;
+                            case 2: adImageView.setImageResource(R.drawable.report_ad); currentAdIndex++; break;
+                            case 3: adImageView.setImageResource(R.drawable.drinkaware_ad2); currentAdIndex = 1; break;
                         }
                     }
                 });
@@ -563,11 +564,11 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
-    private void retrieveAlerts(String stationIDin)
+    private void retrieveAlerts(String stationIDin, String tagIDin)
     {
         if(!stationIDin.matches(""))
         {
-            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin.replace(" ", "_");
+            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin.replace(" ", "_") + "&tagid=" + tagIDin;
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
@@ -579,11 +580,11 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
-    private void retrieveSecurityAlerts(String stationIDin)
+    private void retrieveSecurityAlerts(String stationIDin, String tagIDin)
     {
         if(!stationIDin.matches(""))
         {
-            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_");
+            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_")  + "&tagid=" + tagIDin;
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
@@ -758,8 +759,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             adImageView.setVisibility(View.INVISIBLE);
-            toSpeech.speak("Failed to connect to Server. Alerts Unavaiable.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-            speechInText = "Failed to connect to Server. Alerts Unavaiable. \n--------------------------------------------------------\n";
+            toSpeech.speak("Failed to connect to Server. Alerts Unavailable.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
+            speechInText = "Failed to connect to Server. Alerts Unavailable. \n--------------------------------------------------------\n";
             speakInstructions(currentUID);
         }
     }
@@ -1123,9 +1124,9 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                         currentStationID = nameEditText.getText().toString();
                         switch (getTypeFromUID(currentUID))
                         {
-                            case ID_TYPE_Janitor: retrieveAlerts(currentStationID); break;
+                            case ID_TYPE_Janitor: retrieveAlerts(currentStationID, currentUID); break;
 
-                            case ID_TYPE_Security: retrieveSecurityAlerts(currentStationID); break;
+                            case ID_TYPE_Security: retrieveSecurityAlerts(currentStationID, currentUID); break;
 
                             default: speakInstructions(currentUID); break;
                         }
