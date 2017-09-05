@@ -35,6 +35,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ManagerActivity extends FragmentActivity implements DownloadCallback<String>
 {
@@ -47,15 +49,14 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private EditText alertTextText;
     private Button addCleanupAlertButton;
     private Button addSecurityAlertButton;
+    private TextView signinText;
 
-    private ArrayList<String> itemIdsFromServer;
-    private String currentItemID;
-    private int numberOfResultsToRetrieve;
-    private ArrayList<LatLng> allCurrentItemLocations;
 
-    private ArrayList<String> allCurrentKegIDs;
+    private ArrayList<String> allSignins;
 
-    private Location userLocation;
+
+    Timer periodicGetSigninsTimer;
+
 
     //[Network and periodic location update, Variables]
 
@@ -69,6 +70,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private final int pingingServerFor_Extra_Locations = 3;
     private final int pingingServerFor_Keg_Last_Locations = 4;
     private final int pingingServerFor_UploadAlert = 5;
+    private final int pingingServerFor_LatestSignins = 6;
     private final int pingingServerFor_Nothing = 0;
 
 
@@ -92,6 +94,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
         mapText = (TextView) findViewById(R.id.mapText);
+        signinText = (TextView) findViewById(R.id.signinsText);
         addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
         addSecurityAlertButton = (Button) findViewById(R.id.addSecurityAlertButton);
         stationIDText = (EditText) findViewById(R.id.stationIDEditText);
@@ -119,17 +122,9 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             }
         });
 
-        itemIdsFromServer = new ArrayList<String>();
-        allCurrentItemLocations = new ArrayList<LatLng>();
-
-        currentItemID = "";
-        numberOfResultsToRetrieve = 10;
+        allSignins = new ArrayList<String>();
 
 
-
-        userLocation = new Location("Truck Manager");
-        userLocation.setLatitude(52.663585);
-        userLocation.setLongitude(-8.636135);
 
         pingingServerFor = pingingServerFor_Nothing;
 
@@ -144,6 +139,17 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
         restoreSavedValues(savedInstanceState);
 
+
+        periodicGetSigninsTimer = new Timer();
+        periodicGetSigninsTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                retrieveSignins();
+            }
+        }, 5000);
+
     }
 
     @Override
@@ -153,6 +159,11 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         {
             aNetworkFragment.cancelDownload();
         }
+
+        periodicGetSigninsTimer.cancel();
+        periodicGetSigninsTimer.purge();
+
+
         super.onPause();
     }
 
@@ -180,6 +191,16 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     {
         pingingServerFor = pingingServerFor_UploadAlert;
         serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "security" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
+
+        serverURL = serverURL.replace("\'", "\\\'");
+        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
+        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+    }
+
+    private void retrieveSignins()
+    {
+        pingingServerFor = pingingServerFor_LatestSignins;
+        serverURL = serverIPAddress + "?request=getlatestsignins";
 
         serverURL = serverURL.replace("\'", "\\\'");
         Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
@@ -238,23 +259,24 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
                 switch (pingingServerFor)
                 {
 
-
-                    case pingingServerFor_Keg_Last_Locations:
-                        allCurrentItemLocations = new ArrayList<LatLng>();
-                        allCurrentKegIDs = new ArrayList<String>();
+                    case pingingServerFor_LatestSignins:
+                        allSignins = new ArrayList<String>();
+                        signinText.setText("");
+                        String fullSignins = "";
 
                         for(int i = 0; i < jsonResultFromServer.length(); i++)
                         {
-                            LatLng aloc = new LatLng(jsonResultFromServer.getJSONObject(i).getDouble("lat"), jsonResultFromServer.getJSONObject(i).getDouble("lon"));
-                            allCurrentItemLocations.add(aloc);
-                            allCurrentKegIDs.add(jsonResultFromServer.getJSONObject(i).getString("kegID"));
-                            Log.i("Boop Test", "BOOP KEG LOCATION LOADED " + aloc.toString());
+                            String aSignin = jsonResultFromServer.getJSONObject(i).getString("tagID") + " last signed in at " + jsonResultFromServer.getJSONObject(i).getString("stationID") + " at " + jsonResultFromServer.getJSONObject(i).getString("timestamp");
+                            Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
+                            allSignins.add(aSignin);
+                            fullSignins += (aSignin + "\n" + "\n");
                         }
                         Log.i("Location Update", "Recieved locations.");
-                        mapText.setText("Receving Keg Locations");
+                        mapText.setText("Receiving Latest Signins");
+
+                        signinText.setText(fullSignins);
 
                         break;
-
 
                     default: Log.e("Network Update", "PingingServerFor value does not match any known type"); break;
                 }
@@ -338,5 +360,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
 /*
+
+
 
  */
