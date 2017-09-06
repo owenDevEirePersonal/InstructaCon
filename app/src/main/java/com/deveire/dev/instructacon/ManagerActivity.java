@@ -266,7 +266,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
                         for(int i = 0; i < jsonResultFromServer.length(); i++)
                         {
-                            String aSignin = jsonResultFromServer.getJSONObject(i).getString("tagID") + " last signed in at " + jsonResultFromServer.getJSONObject(i).getString("stationID") + " at " + jsonResultFromServer.getJSONObject(i).getString("timestamp");
+                            String aSignin = jsonResultFromServer.getJSONObject(i).getString("name") + " last signed in at " + jsonResultFromServer.getJSONObject(i).getString("stationID") + " at " + jsonResultFromServer.getJSONObject(i).getString("timestamp");
                             Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
                             allSignins.add(aSignin);
                             fullSignins += (aSignin + "\n" + "\n");

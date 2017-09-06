@@ -92,6 +92,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     private TextToSpeech toSpeech;
     private String speechInText;
     private HashMap<String, String> endOfSpeakIndentifier;
+    private String currentTagName;
 
     private Timer adSwapTimer;
     private int currentAdIndex;
@@ -386,6 +387,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
         currentUID = "";
         currentStationID = "bathroom1";
+        currentTagName = "Unknown Name";
         nameEditText.setText(currentStationID);
 
 
@@ -897,7 +899,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
     private String getNameFromUID(String inUID)
     {
-        switch (inUID)
+        return currentTagName;
+        /*switch (inUID)
         {
             case "0413b3caa74a81":
                 return "Greg Alderman";
@@ -910,7 +913,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
             default:
                 return "Number " + inUID;
-        }
+        }*/
     }
 
 //---[Headset Code]
@@ -1795,8 +1798,16 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                     {
                         pingingServerFor_alertData = false;
                         alertDataText.setText(result);
+
+                        currentTagName = jsonResultFromServer.getJSONObject(0).getString("name");
+                        if(currentTagName.matches("No Name Found"))
+                        {
+                            currentTagName = currentUID;
+                        }
+
+
                         ArrayList<String> results = new ArrayList<String>();
-                        for (int i = 0; i < jsonResultFromServer.length(); i++)
+                        for (int i = 1; i < jsonResultFromServer.length(); i++)
                         {
                             results.add(jsonResultFromServer.getJSONObject(i).getString("alert"));
                         }
