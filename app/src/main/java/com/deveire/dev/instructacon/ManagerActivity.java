@@ -49,6 +49,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private EditText alertTextText;
     private Button addCleanupAlertButton;
     private Button addSecurityAlertButton;
+    private Button registerButton;
     private TextView signinText;
 
 
@@ -97,6 +98,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         signinText = (TextView) findViewById(R.id.signinsText);
         addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
         addSecurityAlertButton = (Button) findViewById(R.id.addSecurityAlertButton);
+        registerButton = (Button) findViewById(R.id.registerButton);
         stationIDText = (EditText) findViewById(R.id.stationIDEditText);
         alertTextText = (EditText) findViewById(R.id.alertTextEditText);
 
@@ -119,6 +121,15 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
                 uploadCleanupAlert();
                 stationIDText.setText("");
                 alertTextText.setText("");
+            }
+        });
+
+        registerButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
             }
         });
 

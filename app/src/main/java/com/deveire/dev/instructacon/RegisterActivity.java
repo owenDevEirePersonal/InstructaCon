@@ -1,60 +1,49 @@
 package com.deveire.dev.instructacon;
 
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.DataSetObserver;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.ResultReceiver;
-import android.provider.Settings;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
-
-import com.acs.bluetooth.*;
-
-import com.deveire.dev.instructacon.bleNfc.*;
-import com.deveire.dev.instructacon.bleNfc.card.*;
-
-
+import com.deveire.dev.instructacon.bleNfc.DeviceManager;
+import com.deveire.dev.instructacon.bleNfc.DeviceManagerCallback;
+import com.deveire.dev.instructacon.bleNfc.Scanner;
+import com.deveire.dev.instructacon.bleNfc.ScannerCallback;
+import com.deveire.dev.instructacon.bleNfc.card.CpuCard;
+import com.deveire.dev.instructacon.bleNfc.card.FeliCa;
+import com.deveire.dev.instructacon.bleNfc.card.Iso14443bCard;
+import com.deveire.dev.instructacon.bleNfc.card.Mifare;
+import com.deveire.dev.instructacon.bleNfc.card.Ntag21x;
+import com.deveire.dev.instructacon.bleNfc.card.SZTCard;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStates;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.maps.GoogleMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,60 +51,20 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DriverActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>
+public class RegisterActivity extends FragmentActivity implements DownloadCallback<String>
 {
-
-    private GoogleMap mMap;
-
+    private Button registerButton;
+    private Spinner typeSpinner;
+    private SpinnerAdapter typeSpinnerAdapter;
+    private EditText nameText;
+    private TextView tagIDText;
     private TextView mapText;
-    private EditText nameEditText;
-    private EditText kegIDEditText;
-    private Button scanKegButton;
-    private Button pairReaderButton;
-    private ImageView adImageView;
 
-    final static int PAIR_READER_REQUESTCODE = 9;
-
-    private SharedPreferences savedData;
-    private String itemName;
-    private int itemID;
-
-    private boolean hasState;
-
-    private TextToSpeech toSpeech;
-    private String speechInText;
-    private HashMap<String, String> endOfSpeakIndentifier;
-    private String currentTagName;
-
-    private Timer adSwapTimer;
-    private int currentAdIndex;
-
-    private ArrayList<String> idsOfTypeSecurity;
-    private ArrayList<String> idsOfTypeJanitor;
-    private final int ID_TYPE_Janitor = 1;
-    private final int ID_TYPE_Security = 2;
-    private int currentTagType;
-
-    //[BLE Variables]
-    private String storedScannerAddress;
-    private final static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb"; //UUID for changing notify or not
-    private int REQUEST_ENABLE_BT;
-    private BluetoothManager btManager;
-    private BluetoothAdapter btAdapter;
-    private BluetoothAdapter.LeScanCallback leScanCallback;
-
-    private BluetoothDevice btDevice;
-
-    private BluetoothGatt btGatt;
-    private BluetoothReaderGattCallback btLeGattCallback;
-    //[/BLE Variables]
+    private Boolean hasState;
 
     //[Retreive Alert Data Variables]
     private Boolean pingingServerFor_alertData;
@@ -149,45 +98,6 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
     //[/Tile Reader Variables]
 
-    //[Headset Variables]
-    /*private ArrayList<String> allHeadsetMacAddresses;
-    private BluetoothDevice currentHeadsetDevice;
-
-    private Timer headsetTimer;
-
-    private BluetoothA2dp currentHeadsetProfile;
-    private Method connectMethod;*/
-    //[/Headset Variables]
-
-    /*[Bar Reader Variables]
-    private String barReaderInput;
-    private Boolean barReaderInputInProgress;
-    private Timer barReaderTimer;
-
-
-
-    //[/Bar Reader Variables] */
-
-    //[Scanner Variables]
-
-    /* Default master key. */
-    /*private static final String DEFAULT_1255_MASTER_KEY = "ACR1255U-J1 Auth";
-
-    private static final byte[] AUTO_POLLING_START = { (byte) 0xE0, 0x00, 0x00, 0x40, 0x01 };
-    private static final byte[] AUTO_POLLING_STOP = { (byte) 0xE0, 0x00, 0x00, 0x40, 0x00 };
-    private static final byte[] GET_UID_APDU_COMMAND = {(byte)0xFF , (byte)0xCA, (byte)0x00, (byte)0x00, (byte)0x00};
-
-    private int scannerConnectionState = BluetoothReader.STATE_DISCONNECTED;
-    private BluetoothReaderManager scannerManager;
-    private BluetoothReader scannerReader;
-
-    private Timer scannerTimer;
-
-    private static final int MAX_AUTHENTICATION_ATTEMPTS_BEFORE_TIMEOUT = 20;
-    private boolean scannerIsAuthenticated;*/
-
-    //[/Scanner Variables]
-
     //[Network and periodic location update, Variables]
     private GoogleApiClient mGoogleApiClient;
     private Location locationReceivedFromLocationUpdates;
@@ -207,237 +117,38 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     //[/Network and periodic location update, Variables]
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_driver);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        setContentView(R.layout.activity_register);
+
+        nameText= (EditText) findViewById(R.id.nameEditText);
+        tagIDText = (TextView) findViewById(R.id.tagIDText);
 
 
+        typeSpinner = (Spinner) findViewById(R.id.typeSpinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.roles_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        typeSpinner.setAdapter(adapter);
 
-        mapText = (TextView) findViewById(R.id.mapText);
-        nameEditText = (EditText) findViewById(R.id.nameEditText);
-        //kegIDEditText = (EditText) findViewById(R.id.kegIDEditText);
-        //scanKegButton = (Button) findViewById(R.id.scanKegButton);
-
-        adImageView = (ImageView) findViewById(R.id.addImageView);
-        adImageView.setImageResource(R.drawable.drinkaware_ad);
-        adImageView.setVisibility(View.VISIBLE);
-
-
-        /*scanKegButton.setOnClickListener(new View.OnClickListener()
+        registerButton = (Button) findViewById(R.id.registerButton);
+        registerButton.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)
             {
-                //scanKeg();
-                //Log.i("Scanner Connection", "current card status = " + currentCardStatus);
-                //transmitApdu();
-            }
-        });*/
 
-        /*pairReaderButton = (Button) findViewById(R.id.pairReaderButton);
-        pairReaderButton.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                storedScannerAddress = null;
-                Intent pairReaderIntent = new Intent(getApplicationContext(), PairingActivity.class);
-                startActivityForResult(pairReaderIntent, PAIR_READER_REQUESTCODE);
-                /*if(btAdapter != null)
-                {
-                    btAdapter.startLeScan(leScanCallback);
-                }*
-            }
-        });*/
-
-        hasState = true;
-
-        userLocation = new Location("Truck");
-        userLocation.setLatitude(0);
-        userLocation.setLongitude(0);
-
-        savedData = this.getApplicationContext().getSharedPreferences("TruckyTrack SavedData", Context.MODE_PRIVATE);
-        itemName = savedData.getString("itemName", "Unknown");
-        itemID = savedData.getInt("itemID", 0);
-        nameEditText.setText(itemName);
-
-
-        pingingServer = false;
-
-        //aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), "https://192.168.1.188:8080/smrttrackerserver-1.0.0-SNAPSHOT/hello?isDoomed=yes");
-        serverURL = serverIPAddress + "?request=storelocation" + Settings.Secure.ANDROID_ID.toString() + "&name=" + itemName + "&lat=" + 0000 + "&lon=" + 0000;
-
-
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-
-        mGoogleApiClient.connect();
-
-        locationScanInterval = 60;//in seconds
-
-
-        request = new LocationRequest();
-        request.setInterval(locationScanInterval * 1000);//in mileseconds
-        request.setFastestInterval(5000);//caps how fast the locations are recieved, as other apps could be triggering updates faster than our app.
-        request.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY); //accurate to 100 meters.
-
-        LocationSettingsRequest.Builder requestBuilder = new LocationSettingsRequest.Builder().addLocationRequest(request);
-
-        PendingResult<LocationSettingsResult> result =
-                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
-                        requestBuilder.build());
-
-        result.setResultCallback(new ResultCallback<LocationSettingsResult>()
-        {
-            @Override
-            public void onResult(@NonNull LocationSettingsResult aResult)
-            {
-                final Status status = aResult.getStatus();
-                final LocationSettingsStates states = aResult.getLocationSettingsStates();
-                switch (status.getStatusCode())
-                {
-                    case LocationSettingsStatusCodes.SUCCESS:
-                        // All location settings are satisfied. The client can
-                        // initialize location requests here.
-
-                        break;
-                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                        // Location settings are not satisfied, but this can be fixed
-                        // by showing the user a dialog.
-                        try
-                        {
-                            // Show the dialog by calling startResolutionForResult(),
-                            // and check the result in onActivityResult().
-                            status.startResolutionForResult(DriverActivity.this, SETTINGS_REQUEST_ID);
-                        } catch (IntentSender.SendIntentException e)
-                        {
-                            // Ignore the error.
-                        }
-                        break;
-                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                        // Location settings are not satisfied. However, we have no way
-                        // to fix the settings so we won't show the dialog.
-                        break;
-                }
+                uploadEmployeeData(nameText.getText().toString(), currentUID, typeSpinner.getSelectedItem().toString());
             }
         });
-
-        geoCoderServiceResultReciever = new AddressResultReceiver(new Handler());
-
-
-        pingingServerFor_alertData = false;
-        alertDataText = (TextView) findViewById(R.id.kegDataText);
-
-        toSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status)
-            {
-                Log.i("Text To Speech Update", "onInit Complete");
-                toSpeech.setLanguage(Locale.ENGLISH);
-                endOfSpeakIndentifier = new HashMap();
-                endOfSpeakIndentifier.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "endOfSpeech");
-                toSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener()
-                {
-                    @Override
-                    public void onStart(String utteranceId)
-                    {
-                        Log.i("Text To Speech Update", "onStart called");
-                    }
-
-                    @Override
-                    public void onDone(String utteranceId)
-                    {
-                        Log.i("Speech", utteranceId + " DONE!");
-                        if(utteranceId.matches("End"))
-                        {
-                            try
-                            {
-                                Thread.sleep(10000);
-                            } catch (InterruptedException e)
-                            {
-                                e.printStackTrace();
-                            }
-                            runOnUiThread(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    adImageView.setVisibility(View.VISIBLE);
-                                    alertDataText.setText("No Instructions.");
-                                }
-                            });
-                        }
-                        //toSpeech.shutdown();
-                    }
-
-                    @Override
-                    public void onError(String utteranceId)
-                    {
-                        Log.i("Text To Speech Update", "ERROR DETECTED");
-                    }
-                });
-            }
-        });
-
-
-        currentUID = "";
-        currentStationID = "bathroom1";
-        currentTagName = "Unknown Name";
-        nameEditText.setText(currentStationID);
-
-
-        //+++[Ad Swapping Setup]
-        currentAdIndex = 1;
-
-        adSwapTimer = new Timer("adSwapTimer");
-        adSwapTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                runOnUiThread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        Log.i("Ad Update", "Changing ad");
-                        switch (currentAdIndex)
-                        {
-                            case 1: adImageView.setImageResource(R.drawable.drinkaware_awareness_1); currentAdIndex++; break;
-                            case 2: adImageView.setImageResource(R.drawable.report_ad); currentAdIndex++; break;
-                            case 3: adImageView.setImageResource(R.drawable.drinkaware_ad2); currentAdIndex = 1; break;
-                        }
-                    }
-                });
-
-            }
-        }, 0, 20000);
-        //++++[/Ad Swapping Setup]
-
 
         setupTileScanner();
-        //setupBluetoothScanner();
-        /*
-        barReaderTimer = new Timer();
-        barReaderInput = "";
-        barReaderInputInProgress = false;
-        kegIDEditText.requestFocus();*/
-
-
-        //setupHeadset();
-        setupTypesOfID();
-        currentTagType = 0;
-
-
-        restoreSavedValues(savedInstanceState);
-
     }
+
 
     @Override
     protected void onResume()
@@ -491,8 +202,6 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             mScanner.stopScan();
         }
 
-        adSwapTimer.cancel();
-        adSwapTimer.purge();
 
         //headsetTimer.cancel();
         //headsetTimer.purge();
@@ -526,14 +235,6 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         hasState = false;
 
-        SharedPreferences.Editor edit = savedData.edit();
-        edit.putString("itemName", nameEditText.getText().toString());
-        edit.putInt("itemID", itemID);
-
-        //edit.putString("ScannerMacAddress", storedScannerAddress);
-
-
-        edit.commit();
 
 
 
@@ -548,31 +249,12 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         super.onStop();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // Check which request we're responding to
-        Log.i("PairingResult", "Call received to onActivity Result with reqyestCode: " + requestCode);
-        if (requestCode == PAIR_READER_REQUESTCODE) {
-            Log.i("PairingResult", "Received Pairing requestCode");
-            // Make sure the request was successful
-            if (resultCode == RESULT_OK) {
-                Log.i("PairingResult", "Recieved Result Ok");
-                storedScannerAddress = data.getStringExtra("BTMacAddress");
-                SharedPreferences.Editor edit = savedData.edit();
-                edit.putString("ScannerMacAddress", storedScannerAddress);
-                edit.commit();
-                Log.i("Pairing Result", "Recieved scannerMacAddress of : " + storedScannerAddress);
 
-
-            }
-        }
-    }
-
-    private void retrieveAlerts(String stationIDin, String tagIDin)
+    private void uploadEmployeeData(String namein, String tagIDin, String typeIn)
     {
-        if(!stationIDin.matches(""))
+        if(!namein.matches("") && !tagIDin.matches("-Please Scan Tag-"))
         {
-            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin.replace(" ", "_") + "&tagid=" + tagIDin;
+            serverURL = serverIPAddress + "?request=addemployee&empid=" + tagIDin + "&emptype=" + typeIn.replace(" ", "_") + "&empname=" + namein.replace(" ", "_");
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
@@ -580,422 +262,15 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
         else
         {
-            Log.e("Network Update", "Error in RetreiveAlters, invalid uuid entered");
+            Log.e("Network Update", "Error in uploadEmployeeData, invalid uuid entered, or no name entered");
         }
     }
-
-    private void retrieveSecurityAlerts(String stationIDin, String tagIDin)
-    {
-        if(!stationIDin.matches(""))
-        {
-            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_")  + "&tagid=" + tagIDin;
-            //lat and long are doubles, will cause issue? nope
-            pingingServerFor_alertData = true;
-            Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-        }
-        else
-        {
-            Log.e("Network Update", "Error in RetreiveAlters, invalid uuid entered");
-        }
-    }
-
-    private void scanKeg(String kegIDin)
-    {
-        if(!kegIDin.matches(""))
-        {
-            kegIDin = kegIDin.replace(' ', '_');
-            serverURL = serverIPAddress + "?request=storekeg" + "&id=" + itemID + "&kegid=" + kegIDin + "&lat=" + locationReceivedFromLocationUpdates.getLatitude() + "&lon=" + locationReceivedFromLocationUpdates.getLongitude();
-            //lat and long are doubles, will cause issue? nope
-            Log.i("Network Update", "Attempting to start download from scanKeg. " + serverURL);
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-        }
-        else
-        {
-            Log.e("kegScan Error", "invalid uuid entered.");
-        }
-    }
-
-    /*public boolean onKeyUp(int keyCode, KeyEvent event)
-    {
-        Log.i("BarReader   ", "OnKeyUp Triggered");
-
-        switch (keyCode)
-        {
-            case KeyEvent.KEYCODE_0: barReaderInput += "0"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_1: barReaderInput += "1"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_2: barReaderInput += "2"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_3: barReaderInput += "3"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_4: barReaderInput += "4"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_5: barReaderInput += "5"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_6: barReaderInput += "6"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_7: barReaderInput += "7"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_8: barReaderInput += "8"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_9: barReaderInput += "9"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_Q: barReaderInput += "Q"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_W: barReaderInput += "W"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_E: barReaderInput += "E"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_R: barReaderInput += "R"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_T: barReaderInput += "T"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_Y: barReaderInput += "Y"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_U: barReaderInput += "U"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_I: barReaderInput += "I"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_O: barReaderInput += "O"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_P: barReaderInput += "P"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_A: barReaderInput += "A"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_S: barReaderInput += "S"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_D: barReaderInput += "D"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_F: barReaderInput += "F"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_G: barReaderInput += "G"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_H: barReaderInput += "H"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_J: barReaderInput += "J"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_K: barReaderInput += "K"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_L: barReaderInput += "L"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_Z: barReaderInput += "Z"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_X: barReaderInput += "X"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_C: barReaderInput += "C"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_V: barReaderInput += "V"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_B: barReaderInput += "B"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_N: barReaderInput += "N"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_M: barReaderInput += "M"; barScannerSheduleUpload(); Log.i("BarReader   ", "Current Input equals: " + barReaderInput); break;
-            case KeyEvent.KEYCODE_BACK: Log.i("BarReader   ", "Current Input equals Back"); finish(); break;
-            default: Log.i("BarReader   ", "Unidentified symbol: " + keyCode); break;
-        }
-
-        return true;
-    }*/
-
-    /*private void barScannerSheduleUpload()
-    {
-        int delay = 1500;
-        if(!barReaderInputInProgress)
-        {
-            barReaderInputInProgress = true;
-            barReaderTimer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    scanKeg(barReaderInput);
-                    Log.i("BarReader   ", "Final Input equals: " + barReaderInput);
-                    barReaderInputInProgress = false;
-                    final String barReaderInputToRead = barReaderInput;
-                    barReaderInput = "";
-                    barReaderTimer.schedule(new TimerTask()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            Log.i("BarReader  ", "Launching Data Request");
-                            retrieveKegData(barReaderInputToRead);
-                        }
-                    }, 2000);
-                }
-            }, delay);
-        }
-    }*/
-
-    private void setupTypesOfID()
-    {
-        idsOfTypeJanitor = new ArrayList<String>();
-        idsOfTypeSecurity = new ArrayList<String>();
-
-        idsOfTypeJanitor.add("0413b3caa74a81");
-        idsOfTypeJanitor.add("0433bf3aa94a81");
-
-        idsOfTypeSecurity.add("046e226a9a3184");
-    }
-
-    //returns the type of tag in numrical form, given the UID of the tag swiped
-    private int getTypeFromUID(String inUID)
-    {
-        Log.i("setupSpeak", "Getting type of tag scanned");
-        for (String aUID: idsOfTypeJanitor)
-        {
-            if(aUID.matches(inUID))
-            {
-                Log.i("setupSpeak", "Type of Tag = Janitor");
-                return ID_TYPE_Janitor;
-            }
-        }
-
-        for (String aUID: idsOfTypeSecurity)
-        {
-            if(aUID.matches(inUID))
-            {
-                Log.i("setupSpeak", "Type of Tag = Security");
-                return ID_TYPE_Security;
-            }
-        }
-
-        Log.i("setupSpeak", "Type of Tag = Unknown");
-        return 0;
-    }
-
-    private void speakAlerts(ArrayList<String> inAlerts)
-    {
-        speechInText = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            adImageView.setVisibility(View.INVISIBLE);
-            if (inAlerts.size() == 0)
-            {
-                toSpeech.speak("You have no new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-                speechInText = "You have no new alerts:\n--------------------------------------------------------\n";
-            }
-            else
-            {
-                toSpeech.speak("You have new alerts.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-                speechInText = "You have new alerts:\n--------------------------------------------------------\n";
-                for (String aAlert : inAlerts)
-                {
-                    toSpeech.speak(aAlert, TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n" + aAlert + "\n";
-                }
-            }
-            speakInstructions(currentUID);
-        }
-    }
-
-    private void speakNetworkError()
-    {
-        speechInText = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            adImageView.setVisibility(View.INVISIBLE);
-            toSpeech.speak("Failed to connect to Server. Alerts Unavailable.", TextToSpeech.QUEUE_FLUSH, null, "newAlerts");
-            speechInText = "Failed to connect to Server. Alerts Unavailable. \n--------------------------------------------------------\n";
-            speakInstructions(currentUID);
-        }
-    }
-
-    public void speakInstructions(String uidIn)
-    {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            switch (currentTagType)
-            {
-                case ID_TYPE_Janitor:
-                    speakDailyBathroomInstructions(uidIn);
-                    break;
-
-                case ID_TYPE_Security:
-                    speakDailySecurityInstructions(uidIn);
-                    break;
-
-                default:
-                    speakDailyUnknownInstructions(uidIn);
-                    break;
-            }
-            toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "End");
-            alertDataText.setText(speechInText);
-
-        }
-    }
-
-    public void speakDailyBathroomInstructions(String uidIn)
-    {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            toSpeech.speak("Here are your instructions, Sanitation Engineer " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
-            speechInText += "\nHere are your instructions, Sanitation Engineer " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
-            toSpeech.speak(" 1. Check slash change the toilet paper.", TextToSpeech.QUEUE_ADD, null, "instruct2");
-            speechInText += "\n1. Check/Change the toilet paper.\n";
-            toSpeech.speak(" 2. Mop the floor.", TextToSpeech.QUEUE_ADD, null, "instruct3");
-            speechInText += "\n2. Mop the floor.\n";
-            toSpeech.speak(" 3. Empty the Trash.", TextToSpeech.QUEUE_ADD, null, "instruct4");
-            speechInText += "\n3. Empty the Trash.\n";
-            toSpeech.speak(" 4. Wipe the Mirror", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 4. Wipe the Mirror.\n";
-            toSpeech.speak(" 5. Clean the Drains", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 5. Clean the Drains.\n";
-            toSpeech.speak(" 6. Change the Towels", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 6. Change the Towels.\n";
-
-            Calendar aCalender = Calendar.getInstance();
-            toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
-            switch (aCalender.get(Calendar.DAY_OF_WEEK))
-            {
-                case Calendar.MONDAY:
-                    toSpeech.speak(" 7. Clean the Faucets", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Clean the Faucets.\n";
-                    break;
-
-                case Calendar.TUESDAY:
-                    toSpeech.speak(" 7. Wash the Rugs", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Wash the Rugs.\n";
-                    break;
-
-                case Calendar.WEDNESDAY:
-                    toSpeech.speak(" 7. Refill the medicine cabinet", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Refill the medicine cabinet.\n";
-                    break;
-
-                case Calendar.THURSDAY:
-                    toSpeech.speak(" 7. Wash the walls", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Wash the walls.\n";
-                    break;
-
-                case Calendar.FRIDAY:
-                    toSpeech.speak(" 7. Scrub the floors and clean the grout", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Scrubs the floors and clean the grout.\n";
-                    break;
-                case Calendar.SATURDAY:
-                    toSpeech.speak(" 7. Clean the toilet bowls, the sinks and the tubs.", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Clean the toilet bowls, the sinks and the tubs.\n";
-                    break;
-            }
-
-            toSpeech.speak(" Monthly Tasks Remaining: ", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n\n Monthly Tasks Remaing:\n--------------------------------------------------------\n";
-            toSpeech.speak(" 8. Clean the Windows and Vents.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 8. Clean the Windows and Vents.\n";
-            toSpeech.speak(" 9. Clean the showers.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 9. Clean the showers.\n";
-            /*toSpeech.speak(" 10. Dust the ceilings.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 10. Dust the ceilings.\n";
-            toSpeech.speak(" 11. Wipe the front and back of the doors.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 11. Wipe the front and back of the doors.\n";
-            toSpeech.speak(" 12. Purge the Toiletries.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 12. Purge the Toiletries.\n";
-            toSpeech.speak(" 13. Wash the shower curtains.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 13. Wash the shower curtains.\n";*/
-        }
-    }
-
-    public void speakDailySecurityInstructions(String uidIn)
-    {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            toSpeech.speak("Here are your instructions, Security Guard " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
-            speechInText += "\nHere are your instructions, Security Guard " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
-            toSpeech.speak(" 1. Is the bathroom clean?", TextToSpeech.QUEUE_ADD, null, "instruct2");
-            speechInText += "\n1. Is the bathroom clean?\n";
-            toSpeech.speak(" 2. Is the water running?", TextToSpeech.QUEUE_ADD, null, "instruct3");
-            speechInText += "\n2. Is the water running?\n";
-            toSpeech.speak(" 3. Are any of the stalls locked?", TextToSpeech.QUEUE_ADD, null, "instruct4");
-            speechInText += "\n3. Are any of the stalls locked?\n";
-
-            Calendar aCalender = Calendar.getInstance();
-            //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
-            //speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
-            switch (aCalender.get(Calendar.DAY_OF_WEEK))
-            {
-
-            }
-        }
-    }
-
-    public void speakDailyUnknownInstructions(String uidIn)
-    {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        {
-            speechInText = "";
-            adImageView.setVisibility(View.INVISIBLE);
-            toSpeech.speak("Your ID, " + uidIn.toString() + ", is not on record,", TextToSpeech.QUEUE_ADD, null, "instruct1");
-            toSpeech.speak("  please report to your supervisor.", TextToSpeech.QUEUE_ADD, null, "instruct2");
-            speechInText += "\nYour id, " + uidIn.toString() + ", is not on record, please report to your supervisor.\n";
-        }
-    }
-
-    private String getNameFromUID(String inUID)
-    {
-        return currentTagName;
-        /*switch (inUID)
-        {
-            case "0413b3caa74a81":
-                return "Greg Alderman";
-
-            case "0433bf3aa94a81":
-                return "Frank Grimes";
-
-            case "046e226a9a3184":
-                return "Cloe Fitzgerald";
-
-            default:
-                return "Number " + inUID;
-        }*/
-    }
-
-//---[Headset Code]
-/*
-    private void setupHeadset()
-    {
-        allHeadsetMacAddresses = new ArrayList<String>();
-        allHeadsetMacAddresses.add("E9:08:EF:C4:1A:65");
-
-        btAdapter = BluetoothAdapter.getDefaultAdapter();
-        btAdapter.getProfileProxy(this, new BluetoothProfile.ServiceListener()
-        {
-            @Override
-            public void onServiceConnected(int profile, BluetoothProfile proxy)
-            {
-                currentHeadsetProfile = (BluetoothA2dp) proxy;
-                Log.i("Headset Update", "Storing Proxy Profile: " + proxy.toString());
-                try
-                {
-                    connectMethod = BluetoothA2dp.class.getDeclaredMethod("connect", BluetoothDevice.class);
-                    Log.i("Headset Update", "Storing Method connect: " + connectMethod.toString());
-                }
-                catch (NoSuchMethodException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onServiceDisconnected(int profile)
-            {
-                Log.i("Headset Update", "a service has disconnected: " + profile);
-            }
-        },   BluetoothProfile.A2DP);
-
-
-        headsetTimer = new Timer();
-
-        headsetTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                Log.i("Headset Update", "Device is badger:" + currentHeadsetProfile.getConnectionState(currentHeadsetDevice));
-                if(currentHeadsetProfile.getConnectionState(currentHeadsetDevice) != BluetoothProfile.STATE_CONNECTED)
-                {
-                    for (String aHeadsetAddress: allHeadsetMacAddresses)
-                    {
-                        Log.i("Headset Update", "Attempting to link to headset at address: " + aHeadsetAddress);
-                        currentHeadsetDevice = btAdapter.getRemoteDevice(aHeadsetAddress);
-                        Log.i("Headset Update", "Connected Devices: " + btAdapter.getBondedDevices().toString());
-                        try
-                        {
-                            Log.i("Headset Update", "Attempting to connect to device, with device: " + currentHeadsetDevice + ". and profile: " + currentHeadsetProfile);
-                            connectMethod.invoke(currentHeadsetProfile, currentHeadsetDevice);
-                        }
-                        catch (IllegalAccessException e)
-                        {
-                            Log.e("Headset Update", "Error Illegal Access exception");
-                            e.printStackTrace();
-                        }
-                        catch (InvocationTargetException e)
-                        {
-                            Log.i("Headset Update", "Error Invocation Target exception");
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        }, 5000, 5000);
-
-    }
-*/
-//---[/Headset Code]
 
 
     //+++[TileScanner Code]
     private void setupTileScanner()
     {
-        dialog = new ProgressDialog(DriverActivity.this);
+        dialog = new ProgressDialog(RegisterActivity.this);
         //Set processing bar style(round,revolving)
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         //Set a Button for ProgressDialog
@@ -1009,8 +284,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         dialog.setIndeterminate(false);
 
         //Initial device operation classes
-        mScanner = new Scanner(DriverActivity.this, scannerCallback);
-        deviceManager = new DeviceManager(DriverActivity.this);
+        mScanner = new Scanner(RegisterActivity.this, scannerCallback);
+        deviceManager = new DeviceManager(RegisterActivity.this);
         deviceManager.setCallBack(deviceManagerCallback);
 
 
@@ -1123,19 +398,18 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                     public void run()
                     {
                         Log.i("TileScanner", "callback received: UID = " + outUID.toString());
-                        alertDataText.setText(outUID);
 
                         currentUID = outUID.toString();
-                        currentStationID = nameEditText.getText().toString();
-                        retrieveAlerts(currentStationID, currentUID);
-                        /*switch (getTypeFromUID(currentUID))
+
+                        runOnUiThread(new Runnable()
                         {
-                            case ID_TYPE_Janitor: retrieveAlerts(currentStationID, currentUID); break;
+                            @Override
+                            public void run()
+                            {
+                                tagIDText.setText(currentUID);
+                            }
+                        });
 
-                            case ID_TYPE_Security: retrieveSecurityAlerts(currentStationID, currentUID); break;
-
-                            default: speakInstructions(currentUID); break;
-                        }*/
 
                         //TODO: fix this
                     }
@@ -1269,7 +543,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                                 {(byte)0x80, (byte)0xB0, 0x00, 0x00, 0x20},
                         };
                         System.out.println("Send order stream");
-                        Handler readSfzHandler = new Handler(DriverActivity.this.getMainLooper()) {
+                        Handler readSfzHandler = new Handler(RegisterActivity.this.getMainLooper()) {
                             @Override
                             public void handleMessage(Message msg) {
                                 final Handler theHandler = msg.getTarget();
@@ -1342,7 +616,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                                         handler.sendEmptyMessage(0);
                                         System.out.println("Balance：" + SZTCard.getBalance(bytApduRtnData));
                                         System.out.println("Send APDU order -read 10 trading records");
-                                        Handler readSztHandler = new Handler(DriverActivity.this.getMainLooper()) {
+                                        Handler readSztHandler = new Handler(RegisterActivity.this.getMainLooper()) {
                                             @Override
                                             public void handleMessage(Message msg) {
                                                 final Handler theHandler = msg.getTarget();
@@ -1700,59 +974,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
 
     //**********[Location Update and server pinging Code]
-    @Override
-    public void onConnectionFailed(ConnectionResult result) {
-        // An unresolvable error has occurred and a connection to Google APIs
-        // could not be established. Display an error message, or handle
-        // the failure silently
 
-        // ...
-    }
-
-    @Override
-    public void onConnected(@Nullable Bundle bundle)
-    {
-        if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            locationReceivedFromLocationUpdates = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, this);
-            if(locationReceivedFromLocationUpdates != null)
-            {
-                //YES, lat and long are multi digit.
-                if(Geocoder.isPresent())
-                {
-
-                }
-                else
-                {
-                    Log.e("ERROR:", "Geocoder is not avaiable");
-                }
-            }
-            else
-            {
-
-            }
-
-
-        }
-
-
-
-    }
-
-    @Override
-    public void onConnectionSuspended(int i)
-    {
-        //put other stuff here
-    }
-
-    //update app based on the new location data, and then begin pinging servlet with the new location
-    @Override
-    public void onLocationChanged(Location location)
-    {
-
-
-    }
 
 
     @Override
@@ -1791,73 +1013,22 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             if(!result.matches("failed to connect to /192.168.1.188 \\(port 8080\\) after 3000ms: isConnected failed: ECONNREFUSED \\(Connection refused\\)"))
             {
                 Log.e("Download", result);
-                try
-                {
-                    JSONArray jsonResultFromServer = new JSONArray(result);
-
-                    Log.i("Network UPDATE", "Non null result received.");
-                    //mapText.setText("We're good");
-                    if (pingingServerFor_alertData)
-                    {
-                        pingingServerFor_alertData = false;
-                        alertDataText.setText(result);
-
-                        currentTagName = jsonResultFromServer.getJSONObject(0).getString("name");
-                        if(currentTagName.matches("No Name Found"))
-                        {
-                            currentTagName = currentUID;
-                        }
-
-                        switch (jsonResultFromServer.getJSONObject(1).getString("type"))
-                        {
-                            case "Security Guard": currentTagType = ID_TYPE_Security; break;
-                            case "Janitor": currentTagType = ID_TYPE_Janitor; break;
-                            default: currentTagType = 0; break;
-                        }
-
-                        ArrayList<String> results = new ArrayList<String>();
-                        for (int i = 2; i < jsonResultFromServer.length(); i++)
-                        {
-                            results.add(jsonResultFromServer.getJSONObject(i).getString("alert"));
-                        }
-
-                        //mapText.setText(result);
-                        speakAlerts(results);
-                    }
-                    else
-                    {
-                        if (itemID == 0 && !result.matches(""))//if app has no assigned id, receive id from servlet.
-                        {
-                            try
-                            {
-                                JSONArray jin = new JSONArray(result);
-                                JSONObject obj = jin.getJSONObject(0);
-                                itemID = obj.getInt("id");
-                            } catch (JSONException e)
-                            {
-                                Log.e("JSON ERROR", "Error retrieving id from servlet with exception: " + e.toString());
-                            }
-                        }
-                    }
-                }
-                catch (JSONException e)
-                {
-                    Log.e("Network Update", "ERROR in Json: " + e.toString());
-                }
+                Log.i("Download", "Results recieved, returning to manager app");
+                finish();
 
             }
             else
             {
                 mapText.setText("Error: network unavaiable");
                 Log.e("Network UPDATE", "Error: network unavaiable, error: " + result);
-                speakNetworkError();
+                //speakNetworkError();
             }
         }
         else
         {
             mapText.setText("Error: network unavaiable");
             Log.e("Network UPDATE", "Error: network unavaiable");
-            speakNetworkError();
+            //speakNetworkError();
         }
 
         Log.e("Download Output", "" + result);
@@ -1875,19 +1046,19 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     public void onProgressUpdate(int progressCode, int percentComplete) {
         switch(progressCode) {
             // You can add UI behavior for progress updates here.
-            case Progress.ERROR:
+            case DownloadCallback.Progress.ERROR:
                 Log.e("Progress Error", "there was an error during a progress report at: " + percentComplete + "%");
                 break;
-            case Progress.CONNECT_SUCCESS:
+            case DownloadCallback.Progress.CONNECT_SUCCESS:
                 Log.i("Progress ", "connection successful during a progress report at: " + percentComplete + "%");
                 break;
-            case Progress.GET_INPUT_STREAM_SUCCESS:
+            case DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS:
                 Log.i("Progress ", "input stream acquired during a progress report at: " + percentComplete + "%");
                 break;
-            case Progress.PROCESS_INPUT_STREAM_IN_PROGRESS:
+            case DownloadCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS:
                 Log.i("Progress ", "input stream in progress during a progress report at: " + percentComplete + "%");
                 break;
-            case Progress.PROCESS_INPUT_STREAM_SUCCESS:
+            case DownloadCallback.Progress.PROCESS_INPUT_STREAM_SUCCESS:
                 Log.i("Progress ", "input stream processing successful during a progress report at: " + percentComplete + "%");
                 break;
         }
@@ -1931,12 +1102,3 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     }
 //**********[/Location Update and server pinging Code]
 }
-
-
-/*
-
-
-
-
-
-  */

@@ -45,11 +45,11 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
         map:layout_constraintBottom_toBottomOf="parent"
-        map:layout_constraintHorizontal_bias="0.0"
+        map:layout_constraintHorizontal_bias="1.0"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toBottomOf="@+id/imageView"
-        map:layout_constraintVertical_bias="1.0">
+        map:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:id="@+id/singinLinearLayout"
@@ -62,11 +62,26 @@
                 android:layout_height="match_parent">
 
                 <Button
+                    android:id="@+id/registerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginRight="8dp"
+                    android:layout_marginTop="79dp"
+                    android:background="@drawable/rounded_button"
+                    android:text="Register new Employee"
+                    android:textColor="@color/cast_expanded_controller_text_color"
+                    map:layout_constraintLeft_toLeftOf="parent"
+                    map:layout_constraintRight_toRightOf="parent"
+                    map:layout_constraintTop_toBottomOf="@+id/addSecurityAlertButton"/>
+
+                <Button
                     android:id="@+id/addSecurityAlertButton"
+                    style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:background="@android:color/transparent"
+                    android:background="@drawable/rounded_button"
                     android:text="Add Security Alert"
                     android:textColor="@color/cast_expanded_controller_text_color"
                     map:layout_constraintHorizontal_bias="0.333"
@@ -108,10 +123,11 @@
 
                 <Button
                     android:id="@+id/addJanitorAlertButton"
+                    style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:background="@android:color/transparent"
+                    android:background="@drawable/rounded_button"
                     android:text="Add Cleaning Alert"
                     android:textColor="@color/cast_expanded_controller_text_color"
                     map:layout_constraintHorizontal_bias="0.525"
@@ -150,12 +166,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp"
-                    android:layout_marginTop="32dp"
                     android:text="Latest Sign Ins"
                     android:textColor="@color/cast_expanded_controller_text_color"
                     android:textSize="24sp"
                     map:layout_constraintLeft_toLeftOf="parent"
-                    map:layout_constraintTop_toBottomOf="@+id/addSecurityAlertButton"/>
+                    android:layout_marginTop="32dp"
+                    map:layout_constraintTop_toBottomOf="@+id/registerButton"/>
 
                 <TextView
                     android:id="@+id/signinsText"
