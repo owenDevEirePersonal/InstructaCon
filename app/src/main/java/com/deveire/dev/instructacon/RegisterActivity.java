@@ -49,6 +49,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -65,6 +66,21 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     private TextView mapText;
 
     private Boolean hasState;
+
+    //[Offline Variables]
+    private SharedPreferences savedData;
+
+    private ArrayList<TagsRow> allTags;
+
+    private ArrayList<AlertsRow> allAlerts;
+
+    private ArrayList<SignInsRow> allSignIns;
+
+    private int signInsCount;
+    private int tagsCount;
+    private int alertsCount;
+    //[/Offline Variables]
+
 
     //[Retreive Alert Data Variables]
     private Boolean pingingServerFor_alertData;
@@ -147,6 +163,17 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
         });
 
         setupTileScanner();
+
+        //[Offline Setup]
+        savedData = this.getApplicationContext().getSharedPreferences("InstructaCon SavedData", Context.MODE_PRIVATE);
+        allAlerts = new ArrayList<AlertsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+        allTags = new ArrayList<TagsRow>();
+
+        alertsCount = 0;
+        signInsCount = 0;
+        tagsCount = 0;
+        //[/Offline Setup]
     }
 
 
@@ -249,16 +276,109 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
         super.onStop();
     }
 
+    //[Offline loading]
+    private void retrieveData()
+    {
+        alertsCount = savedData.getInt("alertsCount", 0);
+        tagsCount = savedData.getInt("tagsCount", 0);
+        signInsCount = savedData.getInt("signInsCount", 0);
+        allAlerts = new ArrayList<AlertsRow>();
+        allTags = new ArrayList<TagsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+
+        for (int i = 0; i < alertsCount; i++)
+        {
+            allAlerts.add(new AlertsRow(savedData.getString("alerts_stationID" + i, "ERROR"), savedData.getString("alerts_alert" + i, "ERROR"), savedData.getBoolean("alerts_isActive" + i, false), savedData.getString("alerts_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < tagsCount; i++)
+        {
+            allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < signInsCount; i++)
+        {
+            allSignIns.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
+        }
+    }
+
+    private void saveData()
+    {
+        SharedPreferences.Editor edit = savedData.edit();
+
+        alertsCount = allAlerts.size();
+        tagsCount = allTags.size();
+        signInsCount = allSignIns.size();
+        edit.putInt("alertsCount", alertsCount);
+        edit.putInt("tagsCount", tagsCount);
+        edit.putInt("signInsCount", signInsCount);
+
+
+        for (int i = 0; i < allAlerts.size(); i++)
+        {
+            edit.putString("alerts_stationID" + i, allAlerts.get(i).getStationID());
+            edit.putString("alerts_alert" + i, allAlerts.get(i).getAlert());
+            edit.putBoolean("alerts_isActive" + i, allAlerts.get(i).isActive());
+            edit.putString("alerts_type" + i, allAlerts.get(i).getType());
+        }
+
+        for (int i = 0; i < allTags.size(); i++)
+        {
+            edit.putString("tags_name" + i, allTags.get(i).getName());
+            edit.putString("tags_id" + i, allTags.get(i).getTagID());
+            edit.putString("tags_type" + i, allTags.get(i).getType());
+        }
+
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        for (int i = 0; i < allSignIns.size(); i++)
+        {
+            edit.putString("signIns_stationID" + i, allSignIns.get(i).getStationID());
+            edit.putString("signIns_tagID" + i, allSignIns.get(i).getTagID());
+            edit.putString("signIns_timestamp" + i, format.format(allSignIns.get(i).getTimestamp()));
+        }
+
+        edit.commit();
+        Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
+        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
+    }
+
+    private TagsRow findRowFromID(String tagIDin)
+    {
+        for (TagsRow arow: allTags)
+        {
+            if(arow.getTagID().matches(tagIDin))
+            {
+                return arow;
+            }
+        }
+        return null;
+    }
+    //[/Offline loading]\
 
     private void uploadEmployeeData(String namein, String tagIDin, String typeIn)
     {
+        retrieveData();
         if(!namein.matches("") && !tagIDin.matches("-Please Scan Tag-"))
         {
-            serverURL = serverIPAddress + "?request=addemployee&empid=" + tagIDin + "&emptype=" + typeIn.replace(" ", "_") + "&empname=" + namein.replace(" ", "_");
-            //lat and long are doubles, will cause issue? nope
-            pingingServerFor_alertData = true;
-            Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+            boolean matchFound = false;
+            for (TagsRow arow: allTags)
+            {
+                if (arow.getTagID().matches(tagIDin))
+                {
+                    arow.setName(namein);
+                    arow.setType(typeIn);
+                    Log.i("Network Update", "Changing tag, with " + namein + ", " + tagIDin + ", " + typeIn);
+                    matchFound = true;
+                    break;
+                }
+            }
+            if(!matchFound)
+            {
+                allTags.add(new TagsRow(namein, tagIDin, typeIn));
+                Log.i("Network Update", "Adding new tag, with " + namein + ", " + tagIDin + ", " + typeIn);
+            }
+            saveData();
+            finish();
         }
         else
         {

@@ -3,6 +3,7 @@ package com.deveire.dev.instructacon;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -34,6 +35,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -58,6 +61,22 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
     Timer periodicGetSigninsTimer;
 
+    //[Offline Variables]
+    private SharedPreferences savedData;
+
+    private ArrayList<TagsRow> allTags;
+
+    private ArrayList<AlertsRow> allAlerts;
+
+    private ArrayList<SignInsRow> allSignIns;
+
+    private int signInsCount;
+    private int tagsCount;
+    private int alertsCount;
+    //[/Offline Variables]
+
+    private String fullSignIn;
+    ArrayList<SignInsRow> current3LatestSignins;
 
     //[Network and periodic location update, Variables]
 
@@ -144,7 +163,16 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
 
+        //[Offline Setup]
+        savedData = this.getApplicationContext().getSharedPreferences("InstructaCon SavedData", Context.MODE_PRIVATE);
+        allAlerts = new ArrayList<AlertsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+        allTags = new ArrayList<TagsRow>();
 
+        alertsCount = 0;
+        signInsCount = 0;
+        tagsCount = 0;
+        //[/Offline Setup]
 
 
 
@@ -187,35 +215,199 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
 
+    //[Offline loading]
+    private void retrieveData()
+    {
+        alertsCount = savedData.getInt("alertsCount", 0);
+        tagsCount = savedData.getInt("tagsCount", 0);
+        signInsCount = savedData.getInt("signInsCount", 0);
+        allAlerts = new ArrayList<AlertsRow>();
+        allTags = new ArrayList<TagsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+
+        for (int i = 0; i < alertsCount; i++)
+        {
+            allAlerts.add(new AlertsRow(savedData.getString("alerts_stationID" + i, "ERROR"), savedData.getString("alerts_alert" + i, "ERROR"), savedData.getBoolean("alerts_isActive" + i, false), savedData.getString("alerts_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < tagsCount; i++)
+        {
+            allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < signInsCount; i++)
+        {
+            allSignIns.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
+        }
+    }
+
+    private void saveData()
+    {
+        SharedPreferences.Editor edit = savedData.edit();
+        alertsCount = allAlerts.size();
+        tagsCount = allTags.size();
+        signInsCount = allSignIns.size();
+        edit.putInt("alertsCount", alertsCount);
+        edit.putInt("tagsCount", tagsCount);
+        edit.putInt("signInsCount", signInsCount);
+
+
+        for (int i = 0; i < allAlerts.size(); i++)
+        {
+            edit.putString("alerts_stationID" + i, allAlerts.get(i).getStationID());
+            edit.putString("alerts_alert" + i, allAlerts.get(i).getAlert());
+            edit.putBoolean("alerts_isActive" + i, allAlerts.get(i).isActive());
+            edit.putString("alerts_type" + i, allAlerts.get(i).getType());
+        }
+
+        for (int i = 0; i < allTags.size(); i++)
+        {
+            edit.putString("tags_name" + i, allTags.get(i).getName());
+            edit.putString("tags_id" + i, allTags.get(i).getTagID());
+            edit.putString("tags_type" + i, allTags.get(i).getType());
+        }
+
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        for (int i = 0; i < allSignIns.size(); i++)
+        {
+            edit.putString("signIns_stationID" + i, allSignIns.get(i).getStationID());
+            edit.putString("signIns_tagID" + i, allSignIns.get(i).getTagID());
+            edit.putString("signIns_timestamp" + i, format.format(allSignIns.get(i).getTimestamp()));
+        }
+
+        edit.commit();
+        Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
+        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
+    }
+
+    private TagsRow findRowFromID(String tagIDin)
+    {
+        for (TagsRow arow: allTags)
+        {
+            if(arow.getTagID().matches(tagIDin))
+            {
+                return arow;
+            }
+        }
+        return null;
+    }
+    //[/Offline loading]\
 
     private void uploadCleanupAlert()
     {
-        pingingServerFor = pingingServerFor_UploadAlert;
-        serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "janitor" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
-
-        serverURL = serverURL.replace("\'", "\\\'");
-        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+        retrieveData();
+        allAlerts.add(new AlertsRow(stationIDText.getText().toString(), alertTextText.getText().toString(), true, "Janitor"));
+        saveData();
     }
 
     private void uploadSecurityAlert()
     {
-        pingingServerFor = pingingServerFor_UploadAlert;
-        serverURL = serverIPAddress + "?request=addalert&stationid=" + stationIDText.getText().toString().replace(" ", "_") + "&alerttype=" + "security" + "&alerttext=" + alertTextText.getText().toString().replace(" ", "_");
-
-        serverURL = serverURL.replace("\'", "\\\'");
-        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+        retrieveData();
+        allAlerts.add(new AlertsRow(stationIDText.getText().toString(), alertTextText.getText().toString(), true, "Security Guard"));
+        saveData();
     }
 
     private void retrieveSignins()
     {
-        pingingServerFor = pingingServerFor_LatestSignins;
-        serverURL = serverIPAddress + "?request=getlatestsignins";
+        retrieveData();
 
-        serverURL = serverURL.replace("\'", "\\\'");
-        Log.i("Network Update", "Attempting to start download from uploadCleanUpAlert." + serverURL);
-        aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                signinText.setText("");
+            }
+        });
+
+        fullSignIn = "";
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        for (TagsRow arow: allTags)
+        {
+            current3LatestSignins = new ArrayList<SignInsRow>();
+            for (SignInsRow brow : allSignIns)
+            {
+                if(arow.getTagID().matches(brow.getTagID()))
+                {
+                    if(current3LatestSignins.size() > 2)
+                    {
+                        sortRowList(brow);
+                    }
+                    else
+                    {
+                        current3LatestSignins.add(brow);
+                    }
+                }
+            }
+            for (SignInsRow crow: current3LatestSignins)
+            {
+                String aSignin = findRowFromID(crow.getTagID()).getName() + " last signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
+                Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
+                allSignins.add(aSignin);
+                fullSignIn += (aSignin + "\n" + "\n");
+            }
+
+        }
+
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                signinText.setText(fullSignIn);
+            }
+        });
+
+
+    }
+
+    private void sortRowList(SignInsRow inrow)
+    {
+        //TODO: fix this horribly inefficent double sorting by making it only do the first sort when its the first time the array reaches a size of 3.
+        //0 is latest, 3 is earliest
+        //Sort the current 3 times, just to be safe
+        SignInsRow temp;
+        if(current3LatestSignins.get(0).getTimestamp().before(current3LatestSignins.get(1).getTimestamp()))
+        {
+            temp = current3LatestSignins.get(1);
+            current3LatestSignins.set(1, current3LatestSignins.get(0));
+            current3LatestSignins.set(0, temp);
+        }
+
+        if(current3LatestSignins.get(1).getTimestamp().before(current3LatestSignins.get(2).getTimestamp()))
+        {
+            temp = current3LatestSignins.get(2);
+            current3LatestSignins.set(2, current3LatestSignins.get(1));
+            current3LatestSignins.set(1, temp);
+        }
+
+
+
+        //add the newly scanned time and sort the whole thing.
+        current3LatestSignins.add(0, inrow);
+        if(current3LatestSignins.get(0).getTimestamp().before(current3LatestSignins.get(1).getTimestamp()))
+        {
+            temp = current3LatestSignins.get(1);
+            current3LatestSignins.set(1, current3LatestSignins.get(0));
+            current3LatestSignins.set(0, temp);
+        }
+
+        if(current3LatestSignins.get(1).getTimestamp().before(current3LatestSignins.get(2).getTimestamp()))
+        {
+            temp = current3LatestSignins.get(2);
+            current3LatestSignins.set(2, current3LatestSignins.get(1));
+            current3LatestSignins.set(1, temp);
+        }
+
+        if(current3LatestSignins.get(2).getTimestamp().before(current3LatestSignins.get(3).getTimestamp()))
+        {
+            temp = current3LatestSignins.get(3);
+            current3LatestSignins.set(3, current3LatestSignins.get(2));
+            current3LatestSignins.set(2, temp);
+        }
+
+        current3LatestSignins.remove(3);
     }
 
 

@@ -60,6 +60,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -83,9 +84,23 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
     final static int PAIR_READER_REQUESTCODE = 9;
 
+
+
+
+    //[Offline Variables]
     private SharedPreferences savedData;
-    private String itemName;
-    private int itemID;
+
+    private ArrayList<TagsRow> allTags;
+
+    private ArrayList<AlertsRow> allAlerts;
+
+    private ArrayList<SignInsRow> allSignIns;
+
+    private int signInsCount;
+    private int tagsCount;
+    private int alertsCount;
+    //[/Offline Variables]
+
 
     private boolean hasState;
 
@@ -259,16 +274,15 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         userLocation.setLatitude(0);
         userLocation.setLongitude(0);
 
-        savedData = this.getApplicationContext().getSharedPreferences("TruckyTrack SavedData", Context.MODE_PRIVATE);
-        itemName = savedData.getString("itemName", "Unknown");
-        itemID = savedData.getInt("itemID", 0);
-        nameEditText.setText(itemName);
+
+
+        nameEditText.setText("Bathroom1");
 
 
         pingingServer = false;
 
         //aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), "https://192.168.1.188:8080/smrttrackerserver-1.0.0-SNAPSHOT/hello?isDoomed=yes");
-        serverURL = serverIPAddress + "?request=storelocation" + Settings.Secure.ANDROID_ID.toString() + "&name=" + itemName + "&lat=" + 0000 + "&lon=" + 0000;
+        serverURL = serverIPAddress + "?request=storelocation" + Settings.Secure.ANDROID_ID.toString() + "&name=" + "&lat=" + 0000 + "&lon=" + 0000;
 
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -434,6 +448,16 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         setupTypesOfID();
         currentTagType = 0;
 
+        //[Offline Setup]
+        savedData = this.getApplicationContext().getSharedPreferences("InstructaCon SavedData", Context.MODE_PRIVATE);
+        allAlerts = new ArrayList<AlertsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+        allTags = new ArrayList<TagsRow>();
+
+        alertsCount = 0;
+        signInsCount = 0;
+        tagsCount = 0;
+        //[/Offline Setup]
 
         restoreSavedValues(savedInstanceState);
 
@@ -526,15 +550,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     {
         hasState = false;
 
-        SharedPreferences.Editor edit = savedData.edit();
-        edit.putString("itemName", nameEditText.getText().toString());
-        edit.putInt("itemID", itemID);
-
         //edit.putString("ScannerMacAddress", storedScannerAddress);
-
-
-        edit.commit();
-
 
 
         /*
@@ -568,20 +584,138 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
+    //[Offline loading]
+    private void retrieveData()
+    {
+        alertsCount = savedData.getInt("alertsCount", 0);
+        tagsCount = savedData.getInt("tagsCount", 0);
+        signInsCount = savedData.getInt("signInsCount", 0);
+        allAlerts = new ArrayList<AlertsRow>();
+        allTags = new ArrayList<TagsRow>();
+        allSignIns = new ArrayList<SignInsRow>();
+
+        for (int i = 0; i < alertsCount; i++)
+        {
+            allAlerts.add(new AlertsRow(savedData.getString("alerts_stationID" + i, "ERROR"), savedData.getString("alerts_alert" + i, "ERROR"), savedData.getBoolean("alerts_isActive" + i, false), savedData.getString("alerts_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < tagsCount; i++)
+        {
+            allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
+        }
+
+        for (int i = 0; i < signInsCount; i++)
+        {
+            allSignIns.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
+        }
+    }
+
+    private void saveData()
+    {
+        SharedPreferences.Editor edit = savedData.edit();
+        alertsCount = allAlerts.size();
+        tagsCount = allTags.size();
+        signInsCount = allSignIns.size();
+        edit.putInt("alertsCount", alertsCount);
+        edit.putInt("tagsCount", tagsCount);
+        edit.putInt("signInsCount", signInsCount);
+
+
+        for (int i = 0; i < allAlerts.size(); i++)
+        {
+            edit.putString("alerts_stationID" + i, allAlerts.get(i).getStationID());
+            edit.putString("alerts_alert" + i, allAlerts.get(i).getAlert());
+            edit.putBoolean("alerts_isActive" + i, allAlerts.get(i).isActive());
+            edit.putString("alerts_type" + i, allAlerts.get(i).getType());
+        }
+
+        for (int i = 0; i < allTags.size(); i++)
+        {
+            edit.putString("tags_name" + i, allTags.get(i).getName());
+            edit.putString("tags_id" + i, allTags.get(i).getTagID());
+            edit.putString("tags_type" + i, allTags.get(i).getType());
+        }
+
+        DateFormat aformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        for (int i = 0; i < allSignIns.size(); i++)
+        {
+            edit.putString("signIns_stationID" + i, allSignIns.get(i).getStationID());
+            edit.putString("signIns_tagID" + i, allSignIns.get(i).getTagID());
+            edit.putString("signIns_timestamp" + i, aformat.format(allSignIns.get(i).getTimestamp()));
+            Log.e("Offline Update", "Saving timestamp: " + aformat.format(allSignIns.get(i).getTimestamp()));
+        }
+
+        edit.commit();
+        Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
+        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
+    }
+
+    private TagsRow findRowFromID(String tagIDin)
+    {
+        Log.i("Offline Update", "finding row from ID:" + tagIDin + ", searching " + allTags.size() + "rows.");
+        for (TagsRow arow: allTags)
+        {
+            if(arow.getTagID().matches(tagIDin))
+            {
+
+                return arow;
+            }
+        }
+        return null;
+    }
+    //[/Offline loading]
+
     private void retrieveAlerts(String stationIDin, String tagIDin)
     {
-        if(!stationIDin.matches(""))
+        retrieveData();
+
+        currentTagName = findRowFromID(tagIDin).getName();
+
+        switch (findRowFromID(tagIDin).getType())
         {
-            serverURL = serverIPAddress + "?request=getalertsfor" + "&stationid=" + stationIDin.replace(" ", "_") + "&tagid=" + tagIDin;
-            //lat and long are doubles, will cause issue? nope
-            pingingServerFor_alertData = true;
-            Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+            case "Security Guard": currentTagType = ID_TYPE_Security; break;
+            case "Janitor": currentTagType = ID_TYPE_Janitor; break;
+            default: currentTagType = 0; break;
         }
-        else
+
+
+        //mapText.setText(result);
+
+        ArrayList<String> returnAlerts = new ArrayList<String>();
+        for (AlertsRow arow: allAlerts)
         {
-            Log.e("Network Update", "Error in RetreiveAlters, invalid uuid entered");
+            if(currentTagType == ID_TYPE_Janitor)
+            {
+                if(arow.getType().matches("Janitor") && arow.isActive())
+                {
+                    returnAlerts.add(arow.getAlert());
+                    if(arow.getStationID().matches(stationIDin))
+                    {
+                        arow.setActive(false);
+                    }
+                }
+
+            }
+            else if(currentTagType == ID_TYPE_Security)
+            {
+                if(arow.getType().matches("Security Guard") && arow.isActive())
+                {
+                    returnAlerts.add(arow.getAlert());
+                    if(arow.getStationID().matches(stationIDin))
+                    {
+                        arow.setActive(false);
+                    }
+                }
+            }
         }
+
+        Calendar aCalender = Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        java.util.Date currentTimeStamp = aCalender.getTime();
+        allSignIns.add(new SignInsRow(stationIDin, tagIDin, dateFormat.format(currentTimeStamp)));
+
+        speakAlerts(returnAlerts);
+        saveData();
     }
 
     private void retrieveSecurityAlerts(String stationIDin, String tagIDin)
@@ -600,21 +734,6 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         }
     }
 
-    private void scanKeg(String kegIDin)
-    {
-        if(!kegIDin.matches(""))
-        {
-            kegIDin = kegIDin.replace(' ', '_');
-            serverURL = serverIPAddress + "?request=storekeg" + "&id=" + itemID + "&kegid=" + kegIDin + "&lat=" + locationReceivedFromLocationUpdates.getLatitude() + "&lon=" + locationReceivedFromLocationUpdates.getLongitude();
-            //lat and long are doubles, will cause issue? nope
-            Log.i("Network Update", "Attempting to start download from scanKeg. " + serverURL);
-            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
-        }
-        else
-        {
-            Log.e("kegScan Error", "invalid uuid entered.");
-        }
-    }
 
     /*public boolean onKeyUp(int keyCode, KeyEvent event)
     {
@@ -1826,18 +1945,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                     }
                     else
                     {
-                        if (itemID == 0 && !result.matches(""))//if app has no assigned id, receive id from servlet.
-                        {
-                            try
-                            {
-                                JSONArray jin = new JSONArray(result);
-                                JSONObject obj = jin.getJSONObject(0);
-                                itemID = obj.getInt("id");
-                            } catch (JSONException e)
-                            {
-                                Log.e("JSON ERROR", "Error retrieving id from servlet with exception: " + e.toString());
-                            }
-                        }
+
                     }
                 }
                 catch (JSONException e)
