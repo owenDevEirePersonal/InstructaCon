@@ -16,4 +16,18 @@
         <item name="android:background">#00a6ed</item>
     </style>
 
+    <style name="AppSpinnerTheme" parent="android:Widget.Spinner">
+        <item name="android:background">@drawable/spinner_background</item>
+    </style>
+
+    <style name="spinnerItemStyle" parent="android:Widget.TextView.SpinnerItem">
+        <!-- item name="android:textColor">#ffffff</item>
+        <item name="android:background">#f24f4f</item -->
+    </style>
+
+    <style name="spinnerDropDownItemStyle" parent="android:TextAppearance.Widget.TextView.SpinnerItem">
+        <!-- <item name="android:textColor">#ffffff</item>
+        <item name="android:background">#f24f4f</item> -->
+    </style>
+
 </resources>

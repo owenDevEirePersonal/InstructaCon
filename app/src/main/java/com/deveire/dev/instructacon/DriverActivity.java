@@ -19,6 +19,7 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
@@ -161,6 +162,10 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     private boolean hasSufferedAtLeastOneFailureToReadUID;
 
     private boolean stopAllScans;
+
+
+    PowerManager pm;
+    PowerManager.WakeLock wl;
 
     //[/Tile Reader Variables]
 
@@ -461,6 +466,12 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
         restoreSavedValues(savedInstanceState);
 
+        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag");
+        wl.acquire();
+
+
+
     }
 
     @Override
@@ -476,6 +487,10 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         tileReaderTimer = new Timer();
         connectToTileScanner();
 
+        if(!wl.isHeld())
+        {
+            wl.acquire();
+        }
         //setupHeadset();
 
         //barReaderTimer = new Timer();
@@ -549,6 +564,11 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     protected void onStop()
     {
         hasState = false;
+
+        toSpeech.stop();
+        toSpeech.shutdown();
+
+        wl.release();
 
         //edit.putString("ScannerMacAddress", storedScannerAddress);
 
@@ -688,7 +708,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             {
                 if(arow.getType().matches("Janitor") && arow.isActive())
                 {
-                    returnAlerts.add(arow.getAlert());
+                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
                     if(arow.getStationID().matches(stationIDin))
                     {
                         arow.setActive(false);
@@ -700,7 +720,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
             {
                 if(arow.getType().matches("Security Guard") && arow.isActive())
                 {
-                    returnAlerts.add(arow.getAlert());
+                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
                     if(arow.getStationID().matches(stationIDin))
                     {
                         arow.setActive(false);

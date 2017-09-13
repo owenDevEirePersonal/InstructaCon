@@ -9,6 +9,7 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -53,6 +54,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private Button addCleanupAlertButton;
     private Button addSecurityAlertButton;
     private Button registerButton;
+    private Button clearButton;
     private TextView signinText;
 
 
@@ -60,6 +62,9 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
     Timer periodicGetSigninsTimer;
+
+    private PowerManager pm;
+    private PowerManager.WakeLock wl;
 
     //[Offline Variables]
     private SharedPreferences savedData;
@@ -118,6 +123,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
         addSecurityAlertButton = (Button) findViewById(R.id.addSecurityAlertButton);
         registerButton = (Button) findViewById(R.id.registerButton);
+        clearButton = (Button) findViewById(R.id.clearButton);
         stationIDText = (EditText) findViewById(R.id.stationIDEditText);
         alertTextText = (EditText) findViewById(R.id.alertTextEditText);
 
@@ -126,9 +132,12 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             @Override
             public void onClick(View v)
             {
-                uploadSecurityAlert();
-                stationIDText.setText("");
-                alertTextText.setText("");
+                if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
+                {
+                    uploadSecurityAlert();
+                    stationIDText.setText("");
+                    alertTextText.setText("");
+                }
             }
         });
 
@@ -137,9 +146,12 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             @Override
             public void onClick(View v)
             {
-                uploadCleanupAlert();
-                stationIDText.setText("");
-                alertTextText.setText("");
+                if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
+                {
+                    uploadCleanupAlert();
+                    stationIDText.setText("");
+                    alertTextText.setText("");
+                }
             }
         });
 
@@ -149,6 +161,20 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             public void onClick(View v)
             {
                 startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
+            }
+        });
+
+        clearButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                retrieveData();
+                for (AlertsRow a: allAlerts)
+                {
+                    a.setActive(false);
+                }
+                saveData();
             }
         });
 
@@ -189,6 +215,10 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             }
         }, 5000);
 
+        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "Manager_Activity_instructacon tag");
+        wl.acquire();
+
     }
 
     @Override
@@ -204,6 +234,24 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
         super.onPause();
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        if(!wl.isHeld())
+        {
+            wl.acquire();
+        }
+    }
+
+    @Override
+    protected void onStop()
+    {
+        wl.release();
+        super.onStop();
+
     }
 
     @Override
@@ -342,7 +390,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             }
             for (SignInsRow crow: current3LatestSignins)
             {
-                String aSignin = findRowFromID(crow.getTagID()).getName() + " last signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
+                String aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
                 Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
                 allSignins.add(aSignin);
                 fullSignIn += (aSignin + "\n" + "\n");

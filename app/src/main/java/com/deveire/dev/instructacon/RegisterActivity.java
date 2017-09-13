@@ -14,6 +14,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -66,6 +67,9 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     private TextView mapText;
 
     private Boolean hasState;
+
+    PowerManager pm;
+    PowerManager.WakeLock wl;
 
     //[Offline Variables]
     private SharedPreferences savedData;
@@ -147,7 +151,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
         typeSpinner = (Spinner) findViewById(R.id.typeSpinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.roles_array, android.R.layout.simple_spinner_item);
         // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_layout);
         // Apply the adapter to the spinner
         typeSpinner.setAdapter(adapter);
 
@@ -174,6 +178,10 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
         signInsCount = 0;
         tagsCount = 0;
         //[/Offline Setup]
+
+        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "activity_register_instructacon tag");
+        wl.acquire();
     }
 
 
@@ -203,6 +211,11 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
 
         setupBluetoothScanner();
         */
+
+        if(!wl.isHeld())
+        {
+            wl.acquire();
+        }
     }
 
     @Override
@@ -261,6 +274,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     protected void onStop()
     {
         hasState = false;
+        wl.release();
 
 
 
@@ -543,7 +557,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
                     public void run()
                     {
                         Log.i("TileScanner", "UID found without a prior failure, assuming its a tag left on the scanner");
-                        alertDataText.setText("UID found without a prior failure, assuming its a tag left on the scanner");
+                        //alertDataText.setText("UID found without a prior failure, assuming its a tag left on the scanner");
                     }
                 });
 
