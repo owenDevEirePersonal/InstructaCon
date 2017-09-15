@@ -116,6 +116,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
 
     private boolean stopAllScans;
 
+
     //[/Tile Reader Variables]
 
     //[Network and periodic location update, Variables]
@@ -221,6 +222,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     @Override
     protected void onPause()
     {
+        Log.e("TileScanner", "onStop");
         hasState = false;
         if(aNetworkFragment != null)
         {
@@ -273,9 +275,9 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     @Override
     protected void onStop()
     {
+        Log.e("TileScanner", "onStop");
         hasState = false;
         wl.release();
-
 
 
 
@@ -980,6 +982,12 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
 
             if (deviceManager.isConnection()) {
                 Log.i("TileScanner", "Ble is connected");
+
+                if(stopAllScans)
+                {
+                    mScanner.stopScan();
+                    deviceManager.requestDisConnectDevice();
+                }
             }
             else {
                 Log.i("TileScanner", "Search device");
@@ -1079,6 +1087,18 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
         catch (IllegalStateException e)
         {
             Log.e("TileScanner", "Timer has been canceled, aborting the call for uid loop");
+
+            //disconnect from TileScanner that has failed to disconnect properly and has remained connected past onStop
+            if(deviceManager.isConnection())
+            {
+                stopAllScans = true;
+                deviceManager.requestDisConnectDevice();
+            }
+
+            if(mScanner.isScanning())
+            {
+                mScanner.stopScan();
+            }
         }
     }
 

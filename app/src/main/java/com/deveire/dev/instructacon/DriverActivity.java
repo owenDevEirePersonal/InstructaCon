@@ -1810,6 +1810,17 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         catch (IllegalStateException e)
         {
             Log.e("TileScanner", "Timer has been canceled, aborting the call for uid loop");
+
+            if(deviceManager.isConnection())
+            {
+                stopAllScans = true;
+                deviceManager.requestDisConnectDevice();
+            }
+
+            if(mScanner.isScanning())
+            {
+                mScanner.stopScan();
+            }
         }
     }
 

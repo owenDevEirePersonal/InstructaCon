@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -13,7 +14,13 @@ import android.os.PowerManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompatSideChannelService;
 import android.support.v4.content.ContextCompat;
+import android.text.SpannableString;
+import android.text.SpannedString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -80,7 +87,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private int alertsCount;
     //[/Offline Variables]
 
-    private String fullSignIn;
+    private SpannedString fullSignIn;
     ArrayList<SignInsRow> current3LatestSignins;
 
     //[Network and periodic location update, Variables]
@@ -368,7 +375,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             }
         });
 
-        fullSignIn = "";
+        fullSignIn = new SpannedString("");
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         for (TagsRow arow: allTags)
@@ -388,12 +395,54 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
                     }
                 }
             }
+            int i = 0;
             for (SignInsRow crow: current3LatestSignins)
             {
+
                 String aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
+                SpannableString bSignin = new SpannableString("");
+
+                //if currentRow is not the oldest row in current3LatestSignins
+                if(i < current3LatestSignins.size() - 1)
+                {
+                    //if time since previous signin less than 1 minute
+                    if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime())/1000)/60 < 1)
+                    {
+                        aSignin += ". " + "less than a minute has elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    }
+                    else if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime())/1000)/60 == 1)
+                    {
+                        aSignin += ". " + " 1 minute has elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    }
+                    else
+                    {
+                        int startOfUnderlinedPart = aSignin.length() + 2; //+2 because of the full stop and space that precedes the next line.
+                        aSignin += ". " + ((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60 + " minutes have elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                        //if time since previous signin greater than 30(1) minutes
+                        if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60 > 30)
+                        {
+                            bSignin.setSpan(new UnderlineSpan(), startOfUnderlinedPart, bSignin.length(), 0);
+                            bSignin.setSpan(new ForegroundColorSpan(Color.CYAN), startOfUnderlinedPart, bSignin.length(), 0);
+                        }
+                    }
+                }
+                else
+                {
+                    aSignin += ". Time since last signin, unavaiable.";
+                    bSignin = new SpannableString(aSignin + "\n" + "\n");
+                }
                 Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
                 allSignins.add(aSignin);
-                fullSignIn += (aSignin + "\n" + "\n");
+                fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
+
+
+                i++;
             }
 
         }
@@ -611,7 +660,6 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
 /*
-
 
 
  */
