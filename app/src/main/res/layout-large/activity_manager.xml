@@ -49,7 +49,7 @@
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toBottomOf="@+id/imageView"
-        map:layout_constraintVertical_bias="0.0">
+        map:layout_constraintVertical_bias="1.0">
 
         <LinearLayout
             android:id="@+id/singinLinearLayout"
@@ -226,6 +226,23 @@
                     map:layout_constraintRight_toRightOf="parent"
                     map:layout_constraintTop_toBottomOf="@+id/signinTitleText"
                     map:srcCompat="@color/cast_libraries_material_featurehighlight_outer_highlight_default_color"/>
+
+                <EditText
+                    android:id="@+id/filterEditText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginLeft="64dp"
+                    android:layout_marginRight="8dp"
+                    android:layout_marginTop="0dp"
+                    android:ems="10"
+                    android:inputType="textPersonName"
+                    android:textColor="@color/cast_expanded_controller_text_color"
+                    map:layout_constraintBottom_toBottomOf="@+id/imageView2"
+                    map:layout_constraintLeft_toRightOf="@+id/signinTitleText"
+                    map:layout_constraintRight_toRightOf="parent"
+                    map:layout_constraintTop_toTopOf="@+id/signinTitleText"
+                    map:layout_constraintHorizontal_bias="1.0"/>
             </android.support.constraint.ConstraintLayout>
         </LinearLayout>
     </ScrollView>

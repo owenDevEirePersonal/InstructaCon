@@ -1,44 +1,29 @@
 package com.deveire.dev.instructacon;
 
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Handler;
 import android.os.PowerManager;
-import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompatSideChannelService;
-import android.support.v4.content.ContextCompat;
+import android.text.Editable;
 import android.text.SpannableString;
 import android.text.SpannedString;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -63,6 +48,9 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private Button registerButton;
     private Button clearButton;
     private TextView signinText;
+    private EditText filterEditText;
+
+    private TextWatcher filterTextWatcher;
 
 
     private ArrayList<String> allSignins;
@@ -80,7 +68,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
     private ArrayList<AlertsRow> allAlerts;
 
-    private ArrayList<SignInsRow> allSignIns;
+    private ArrayList<SignInsRow> allSignInRows;
 
     private int signInsCount;
     private int tagsCount;
@@ -199,7 +187,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         //[Offline Setup]
         savedData = this.getApplicationContext().getSharedPreferences("InstructaCon SavedData", Context.MODE_PRIVATE);
         allAlerts = new ArrayList<AlertsRow>();
-        allSignIns = new ArrayList<SignInsRow>();
+        allSignInRows = new ArrayList<SignInsRow>();
         allTags = new ArrayList<TagsRow>();
 
         alertsCount = 0;
@@ -207,7 +195,34 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         tagsCount = 0;
         //[/Offline Setup]
 
+        //[filtering Signins]
+        filterTextWatcher = new TextWatcher()
+        {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after)
+            {
 
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count)
+            {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s)
+            {
+                String filter = s.toString();
+                Log.i("filterWatcher", filter);
+                filterSignins(filter);
+
+            }
+        };
+
+        filterEditText = (EditText) findViewById(R.id.filterEditText);
+        filterEditText.addTextChangedListener(filterTextWatcher);
+        //[/filtering Signins]
 
         restoreSavedValues(savedInstanceState);
 
@@ -278,7 +293,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         signInsCount = savedData.getInt("signInsCount", 0);
         allAlerts = new ArrayList<AlertsRow>();
         allTags = new ArrayList<TagsRow>();
-        allSignIns = new ArrayList<SignInsRow>();
+        allSignInRows = new ArrayList<SignInsRow>();
 
         for (int i = 0; i < alertsCount; i++)
         {
@@ -292,7 +307,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
         for (int i = 0; i < signInsCount; i++)
         {
-            allSignIns.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
+            allSignInRows.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
         }
     }
 
@@ -301,7 +316,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         SharedPreferences.Editor edit = savedData.edit();
         alertsCount = allAlerts.size();
         tagsCount = allTags.size();
-        signInsCount = allSignIns.size();
+        signInsCount = allSignInRows.size();
         edit.putInt("alertsCount", alertsCount);
         edit.putInt("tagsCount", tagsCount);
         edit.putInt("signInsCount", signInsCount);
@@ -323,16 +338,16 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         }
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        for (int i = 0; i < allSignIns.size(); i++)
+        for (int i = 0; i < allSignInRows.size(); i++)
         {
-            edit.putString("signIns_stationID" + i, allSignIns.get(i).getStationID());
-            edit.putString("signIns_tagID" + i, allSignIns.get(i).getTagID());
-            edit.putString("signIns_timestamp" + i, format.format(allSignIns.get(i).getTimestamp()));
+            edit.putString("signIns_stationID" + i, allSignInRows.get(i).getStationID());
+            edit.putString("signIns_tagID" + i, allSignInRows.get(i).getTagID());
+            edit.putString("signIns_timestamp" + i, format.format(allSignInRows.get(i).getTimestamp()));
         }
 
         edit.commit();
         Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
-        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
+        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignInRows.size());
     }
 
     private TagsRow findRowFromID(String tagIDin)
@@ -381,7 +396,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         for (TagsRow arow: allTags)
         {
             current3LatestSignins = new ArrayList<SignInsRow>();
-            for (SignInsRow brow : allSignIns)
+            for (SignInsRow brow : allSignInRows)
             {
                 if(arow.getTagID().matches(brow.getTagID()))
                 {
@@ -416,6 +431,20 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
                     {
                         aSignin += ". " + " 1 minute has elapsed since last signin.";
                         bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    }
+                    else if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime())/1000)/60 > 360)
+                    {
+                        int startOfUnderlinedPart = aSignin.length() + 2; //+2 because of the full stop and space that precedes the next line.
+                        aSignin += ". " + "Over " + (((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60) /60 + " hours have elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                        //if time since previous signin greater than 30(1) minutes
+                        if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60 > 30)
+                        {
+                            bSignin.setSpan(new UnderlineSpan(), startOfUnderlinedPart, bSignin.length(), 0);
+                            bSignin.setSpan(new ForegroundColorSpan(Color.CYAN), startOfUnderlinedPart, bSignin.length(), 0);
+                        }
 
                     }
                     else
@@ -505,6 +534,110 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         }
 
         current3LatestSignins.remove(3);
+    }
+
+    private void filterSignins(String inFilter)
+    {
+        /*TODO: redo signins text so that all entires are stored a strings in an arraylist, then redo this method to work off that list, rather than recompiling the
+          entire list off of all the Arraylists of rows.*/
+        allSignins = new ArrayList<String>();
+        fullSignIn = new SpannedString("");
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+
+        ArrayList<SignInsRow> allMatchingRows = new ArrayList<SignInsRow>();
+        for (SignInsRow arow: allSignInRows)
+        {
+            if(findRowFromID(arow.getTagID()).getName().contains(inFilter))
+            {
+                allMatchingRows.add(arow);
+            }
+        }
+
+
+        /*
+        *  The following code is a identical to the code from retrieveSignins()
+        *  except that the foreach loop of brow pulls from allMatchingRows rather than allSigninRows
+        */
+        for (TagsRow arow: allTags)
+        {
+            current3LatestSignins = new ArrayList<SignInsRow>();
+            for (SignInsRow brow : allMatchingRows)
+            {
+                if(arow.getTagID().matches(brow.getTagID()))
+                {
+                    if(current3LatestSignins.size() > 2)
+                    {
+                        sortRowList(brow);
+                    }
+                    else
+                    {
+                        current3LatestSignins.add(brow);
+                    }
+                }
+            }
+            int i = 0;
+            for (SignInsRow crow: current3LatestSignins)
+            {
+
+                String aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
+                SpannableString bSignin = new SpannableString("");
+
+                //if currentRow is not the oldest row in current3LatestSignins
+                if(i < current3LatestSignins.size() - 1)
+                {
+                    //if time since previous signin less than 1 minute
+                    if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime())/1000)/60 < 1)
+                    {
+                        aSignin += ". " + "less than a minute has elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    }
+                    else if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime())/1000)/60 == 1)
+                    {
+                        aSignin += ". " + " 1 minute has elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    }
+                    else
+                    {
+                        int startOfUnderlinedPart = aSignin.length() + 2; //+2 because of the full stop and space that precedes the next line.
+                        aSignin += ". " + ((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60 + " minutes have elapsed since last signin.";
+                        bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                        //if time since previous signin greater than 30(1) minutes
+                        if(((crow.getTimestamp().getTime() - current3LatestSignins.get(i + 1).getTimestamp().getTime()) / 1000) / 60 > 30)
+                        {
+                            bSignin.setSpan(new UnderlineSpan(), startOfUnderlinedPart, bSignin.length(), 0);
+                            bSignin.setSpan(new ForegroundColorSpan(Color.CYAN), startOfUnderlinedPart, bSignin.length(), 0);
+                        }
+                    }
+                }
+                else
+                {
+                    aSignin += ". Time since last signin, unavaiable.";
+                    bSignin = new SpannableString(aSignin + "\n" + "\n");
+                }
+                Log.i("Boop Test", "BOOP A LATEST SIGNIN LOADED " + aSignin);
+                allSignins.add(aSignin);
+                fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
+
+
+                i++;
+            }
+
+        }
+
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                signinText.setText(fullSignIn);
+            }
+        });
+
+
     }
 
 
