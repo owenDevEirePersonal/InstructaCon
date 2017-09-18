@@ -59,7 +59,6 @@ import com.google.android.gms.maps.GoogleMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -71,7 +70,7 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DriverActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>
+public class StationActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>
 {
 
     private GoogleMap mMap;
@@ -212,7 +211,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     private GoogleApiClient mGoogleApiClient;
     private Location locationReceivedFromLocationUpdates;
     private Location userLocation;
-    private DriverActivity.AddressResultReceiver geoCoderServiceResultReciever;
+    private StationActivity.AddressResultReceiver geoCoderServiceResultReciever;
     private int locationScanInterval;
 
     LocationRequest request;
@@ -231,7 +230,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_driver);
+        setContentView(R.layout.activity_station);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
 
 
@@ -333,7 +332,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                         {
                             // Show the dialog by calling startResolutionForResult(),
                             // and check the result in onActivityResult().
-                            status.startResolutionForResult(DriverActivity.this, SETTINGS_REQUEST_ID);
+                            status.startResolutionForResult(StationActivity.this, SETTINGS_REQUEST_ID);
                         } catch (IntentSender.SendIntentException e)
                         {
                             // Ignore the error.
@@ -1134,7 +1133,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
     //+++[TileScanner Code]
     private void setupTileScanner()
     {
-        dialog = new ProgressDialog(DriverActivity.this);
+        dialog = new ProgressDialog(StationActivity.this);
         //Set processing bar style(round,revolving)
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         //Set a Button for ProgressDialog
@@ -1148,8 +1147,8 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
         dialog.setIndeterminate(false);
 
         //Initial device operation classes
-        mScanner = new Scanner(DriverActivity.this, scannerCallback);
-        deviceManager = new DeviceManager(DriverActivity.this);
+        mScanner = new Scanner(StationActivity.this, scannerCallback);
+        deviceManager = new DeviceManager(StationActivity.this);
         deviceManager.setCallBack(deviceManagerCallback);
 
 
@@ -1408,7 +1407,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                                 {(byte)0x80, (byte)0xB0, 0x00, 0x00, 0x20},
                         };
                         System.out.println("Send order stream");
-                        Handler readSfzHandler = new Handler(DriverActivity.this.getMainLooper()) {
+                        Handler readSfzHandler = new Handler(StationActivity.this.getMainLooper()) {
                             @Override
                             public void handleMessage(Message msg) {
                                 final Handler theHandler = msg.getTarget();
@@ -1481,7 +1480,7 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
                                         handler.sendEmptyMessage(0);
                                         System.out.println("Balance：" + SZTCard.getBalance(bytApduRtnData));
                                         System.out.println("Send APDU order -read 10 trading records");
-                                        Handler readSztHandler = new Handler(DriverActivity.this.getMainLooper()) {
+                                        Handler readSztHandler = new Handler(StationActivity.this.getMainLooper()) {
                                             @Override
                                             public void handleMessage(Message msg) {
                                                 final Handler theHandler = msg.getTarget();
@@ -2073,9 +2072,5 @@ public class DriverActivity extends FragmentActivity implements GoogleApiClient.
 
 
 /*
-
-
-
-
 
   */

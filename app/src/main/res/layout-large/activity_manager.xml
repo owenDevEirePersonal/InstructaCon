@@ -110,7 +110,7 @@
                 <EditText
                     android:id="@+id/stationIDEditText"
                     android:layout_width="0dp"
-                    android:layout_height="43dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginEnd="16dp"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
@@ -128,18 +128,18 @@
                 <EditText
                     android:id="@+id/alertTextEditText"
                     android:layout_width="0dp"
-                    android:layout_height="43dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_marginLeft="0dp"
                     android:layout_marginRight="0dp"
+                    android:layout_marginTop="16dp"
                     android:ems="10"
                     android:inputType="text"
                     android:textColor="@color/cast_expanded_controller_text_color"
                     android:textSize="24sp"
+                    map:layout_constraintHorizontal_bias="0.0"
                     map:layout_constraintLeft_toLeftOf="@+id/stationIDEditText"
                     map:layout_constraintRight_toRightOf="@+id/stationIDEditText"
-                    map:layout_constraintHorizontal_bias="0.0"
-                    android:layout_marginTop="16dp"
                     map:layout_constraintTop_toBottomOf="@+id/textView2"/>
 
                 <Button

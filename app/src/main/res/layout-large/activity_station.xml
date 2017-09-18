@@ -68,7 +68,7 @@
                 android:layout_marginTop="8dp"
                 android:text="TextView"
                 android:textColor="@color/cast_expanded_controller_text_color"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 map:layout_constraintBottom_toBottomOf="parent"
                 map:layout_constraintHorizontal_bias="1.0"
                 map:layout_constraintLeft_toLeftOf="parent"

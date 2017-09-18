@@ -6,9 +6,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.database.DataSetObserver;
-import android.location.Geocoder;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -16,14 +13,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.ResultReceiver;
-import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -41,14 +34,8 @@ import com.deveire.dev.instructacon.bleNfc.card.Iso14443bCard;
 import com.deveire.dev.instructacon.bleNfc.card.Mifare;
 import com.deveire.dev.instructacon.bleNfc.card.Ntag21x;
 import com.deveire.dev.instructacon.bleNfc.card.SZTCard;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -123,7 +110,7 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
     private GoogleApiClient mGoogleApiClient;
     private Location locationReceivedFromLocationUpdates;
     private Location userLocation;
-    private DriverActivity.AddressResultReceiver geoCoderServiceResultReciever;
+    private StationActivity.AddressResultReceiver geoCoderServiceResultReciever;
     private int locationScanInterval;
 
     LocationRequest request;
