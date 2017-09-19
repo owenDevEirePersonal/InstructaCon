@@ -81,6 +81,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private Button scanKegButton;
     private Button pairReaderButton;
     private ImageView adImageView;
+    private TextView inProgressText;
 
     final static int PAIR_READER_REQUESTCODE = 9;
 
@@ -244,6 +245,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         adImageView.setImageResource(R.drawable.drinkaware_ad);
         adImageView.setVisibility(View.VISIBLE);
 
+        //inProgressText = (TextView) findViewById(R.id.inProgressText);
+        //inProgressText.setVisibility(View.INVISIBLE);
 
         /*scanKegButton.setOnClickListener(new View.OnClickListener()
         {
@@ -386,6 +389,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 @Override
                                 public void run()
                                 {
+
                                     adImageView.setVisibility(View.VISIBLE);
                                     alertDataText.setText("No Instructions.");
                                 }
@@ -429,7 +433,9 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         {
                             case 1: adImageView.setImageResource(R.drawable.drinkaware_awareness_1); currentAdIndex++; break;
                             case 2: adImageView.setImageResource(R.drawable.report_ad); currentAdIndex++; break;
-                            case 3: adImageView.setImageResource(R.drawable.drinkaware_ad2); currentAdIndex = 1; break;
+                            case 3: adImageView.setImageResource(R.drawable.stock_ad); currentAdIndex++; break;
+                            case 4: adImageView.setImageResource(R.drawable.menu_ad); currentAdIndex++; break;
+                            case 5: adImageView.setImageResource(R.drawable.inprogress_ad); currentAdIndex = 1; break;
                         }
                     }
                 });

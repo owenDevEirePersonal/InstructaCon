@@ -17,6 +17,7 @@
         android:text="TextView"
         android:textColor="@color/cast_expanded_controller_text_color"
         android:textSize="24sp"
+        android:visibility="invisible"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintTop_toTopOf="parent"/>
 
