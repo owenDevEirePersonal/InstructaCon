@@ -81,7 +81,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private Button scanKegButton;
     private Button pairReaderButton;
     private ImageView adImageView;
-    private TextView inProgressText;
+    private ImageView inProgressImage;
 
     final static int PAIR_READER_REQUESTCODE = 9;
 
@@ -118,6 +118,10 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final int ID_TYPE_Janitor = 1;
     private final int ID_TYPE_Security = 2;
     private int currentTagType;
+
+
+    private boolean displayingInProgress;
+    private Timer stopInProgressTimer;
 
     //[BLE Variables]
     private String storedScannerAddress;
@@ -384,16 +388,40 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             {
                                 e.printStackTrace();
                             }
+
                             runOnUiThread(new Runnable()
                             {
                                 @Override
                                 public void run()
                                 {
-
-                                    adImageView.setVisibility(View.VISIBLE);
+                                    inProgressImage.setVisibility(View.VISIBLE);
+                                    alertDataText.setVisibility(View.INVISIBLE);
                                     alertDataText.setText("No Instructions.");
                                 }
                             });
+                            displayingInProgress = true;
+                            stopInProgressTimer.schedule(new TimerTask()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    if(displayingInProgress)
+                                    {
+                                        displayingInProgress = false;
+                                        runOnUiThread(new Runnable()
+                                        {
+                                            @Override
+                                            public void run()
+                                            {
+                                                inProgressImage.setVisibility(View.INVISIBLE);
+                                                alertDataText.setVisibility(View.VISIBLE);
+                                                adImageView.setVisibility(View.VISIBLE);
+                                            }
+                                        });
+
+                                    }
+                                }
+                            }, 60000); //after 1 minute, revert to ads.
                         }
                         //toSpeech.shutdown();
                     }
@@ -434,8 +462,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             case 1: adImageView.setImageResource(R.drawable.drinkaware_awareness_1); currentAdIndex++; break;
                             case 2: adImageView.setImageResource(R.drawable.report_ad); currentAdIndex++; break;
                             case 3: adImageView.setImageResource(R.drawable.stock_ad); currentAdIndex++; break;
-                            case 4: adImageView.setImageResource(R.drawable.menu_ad); currentAdIndex++; break;
-                            case 5: adImageView.setImageResource(R.drawable.inprogress_ad); currentAdIndex = 1; break;
+                            case 4: adImageView.setImageResource(R.drawable.menu_ad); currentAdIndex = 1; break;
                         }
                     }
                 });
@@ -469,14 +496,17 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         tagsCount = 0;
         //[/Offline Setup]
 
-        restoreSavedValues(savedInstanceState);
 
         pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag");
         wl.acquire();
 
 
+        inProgressImage = (ImageView) findViewById(R.id.inProgressImage);
+        inProgressImage.setVisibility(View.INVISIBLE);
+        stopInProgressTimer = new Timer();
 
+        restoreSavedValues(savedInstanceState);
     }
 
     @Override
@@ -537,6 +567,9 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
         adSwapTimer.cancel();
         adSwapTimer.purge();
+
+        stopInProgressTimer.cancel();
+        stopInProgressTimer.purge();
 
         //headsetTimer.cancel();
         //headsetTimer.purge();
@@ -1237,6 +1270,9 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             super.onReceiveDeviceAuth(authData);
         }
 
+
+
+        //*****This Method recieves the UID of the scanned tags(at least the type that we're working with)
         @Override
         public void onReceiveRfnSearchCard(boolean blnIsSus, int cardType, byte[] bytCardSn, byte[] bytCarATS)
         {
@@ -1269,9 +1305,42 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         Log.i("TileScanner", "callback received: UID = " + outUID.toString());
                         alertDataText.setText(outUID);
 
+                        String lastUID = currentUID;
+
                         currentUID = outUID.toString();
                         currentStationID = nameEditText.getText().toString();
-                        retrieveAlerts(currentStationID, currentUID);
+
+                        Log.i("INPROGRESS", "inProgress:" + displayingInProgress);
+                        if(!displayingInProgress)
+                        {
+                            retrieveAlerts(currentStationID, currentUID);
+                        }
+                        else
+                        {
+
+                            displayingInProgress = false;
+                            stopInProgressTimer.cancel();
+                            stopInProgressTimer.purge();
+                            stopInProgressTimer = new Timer();
+
+                            runOnUiThread(new Runnable()
+                                    {
+                                        @Override
+                                        public void run()
+                                        {
+                                            inProgressImage.setVisibility(View.INVISIBLE);
+                                            alertDataText.setVisibility(View.VISIBLE);
+                                            adImageView.setVisibility(View.VISIBLE);
+                                        }
+                                    }
+                            );
+
+                            Log.i("INPROGRESS", "currentUID" + currentUID +  " lastUID:" + lastUID);
+                            if(!currentUID.matches(lastUID))
+                            {
+                                retrieveAlerts(currentStationID, currentUID);
+                            }
+                        }
                         /*switch (getTypeFromUID(currentUID))
                         {
                             case ID_TYPE_Janitor: retrieveAlerts(currentStationID, currentUID); break;
@@ -2078,9 +2147,6 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
 
 /*
-
-
-
 
 
   */
