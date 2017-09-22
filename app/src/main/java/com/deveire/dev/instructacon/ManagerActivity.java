@@ -45,6 +45,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     private EditText alertTextText;
     private Button addCleanupAlertButton;
     private Button addSecurityAlertButton;
+    private Button addTechnician1AlertButton;
+    private Button addTechnician2AlertButton;
     private Button registerButton;
     private Button clearButton;
     private TextView signinText;
@@ -117,6 +119,8 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         signinText = (TextView) findViewById(R.id.signinsText);
         addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
         addSecurityAlertButton = (Button) findViewById(R.id.addSecurityAlertButton);
+        addTechnician1AlertButton = (Button) findViewById(R.id.addTechnician1AlertButton);
+        addTechnician2AlertButton = (Button) findViewById(R.id.addTechnician2AlertButton);
         registerButton = (Button) findViewById(R.id.registerButton);
         clearButton = (Button) findViewById(R.id.clearButton);
         stationIDText = (EditText) findViewById(R.id.stationIDEditText);
@@ -144,6 +148,34 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
                 if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
                 {
                     uploadCleanupAlert();
+                    stationIDText.setText("");
+                    alertTextText.setText("");
+                }
+            }
+        });
+
+        addTechnician1AlertButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
+                {
+                    uploadTechnicianClass1Alert();
+                    stationIDText.setText("");
+                    alertTextText.setText("");
+                }
+            }
+        });
+
+        addTechnician2AlertButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
+                {
+                    uploadTechnicianClass2Alert();
                     stationIDText.setText("");
                     alertTextText.setText("");
                 }
@@ -374,6 +406,20 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
     {
         retrieveData();
         allAlerts.add(new AlertsRow(stationIDText.getText().toString(), alertTextText.getText().toString(), true, "Security Guard"));
+        saveData();
+    }
+
+    private void uploadTechnicianClass1Alert()
+    {
+        retrieveData();
+        allAlerts.add(new AlertsRow(stationIDText.getText().toString(), alertTextText.getText().toString(), true, "Technician Class 1"));
+        saveData();
+    }
+
+    private void uploadTechnicianClass2Alert()
+    {
+        retrieveData();
+        allAlerts.add(new AlertsRow(stationIDText.getText().toString(), alertTextText.getText().toString(), true, "Technician Class 2"));
         saveData();
     }
 

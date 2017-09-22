@@ -117,6 +117,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private ArrayList<String> idsOfTypeJanitor;
     private final int ID_TYPE_Janitor = 1;
     private final int ID_TYPE_Security = 2;
+    private final int ID_TYPE_Class1_Technician = 3;
+    private final int ID_TYPE_Class2_Technician = 4;
     private int currentTagType;
 
 
@@ -733,6 +735,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         {
             case "Security Guard": currentTagType = ID_TYPE_Security; break;
             case "Janitor": currentTagType = ID_TYPE_Janitor; break;
+            case "Techician Class 1": currentTagType = ID_TYPE_Class1_Technician; break;
+            case "Techician Class 2": currentTagType = ID_TYPE_Class2_Technician; break;
             default: currentTagType = 0; break;
         }
 
@@ -757,6 +761,28 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             else if(currentTagType == ID_TYPE_Security)
             {
                 if(arow.getType().matches("Security Guard") && arow.isActive())
+                {
+                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                    if(arow.getStationID().matches(stationIDin))
+                    {
+                        arow.setActive(false);
+                    }
+                }
+            }
+            else if(currentTagType == ID_TYPE_Class1_Technician)
+            {
+                if(arow.getType().matches("Technician Class 1") && arow.isActive())
+                {
+                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                    if(arow.getStationID().matches(stationIDin))
+                    {
+                        arow.setActive(false);
+                    }
+                }
+            }
+            else if(currentTagType == ID_TYPE_Class2_Technician)
+            {
+                if((arow.getType().matches("Technician Class 2") ||  arow.getType().matches("Technician Class 1") ) && arow.isActive())
                 {
                     returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
                     if(arow.getStationID().matches(stationIDin))
@@ -960,6 +986,14 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     speakDailySecurityInstructions(uidIn);
                     break;
 
+                case ID_TYPE_Class1_Technician:
+                    speakDailyTechnician1Instructions(uidIn);
+                    break;
+
+                case ID_TYPE_Class2_Technician:
+                    speakDailyTechnician2Instructions(uidIn);
+                    break;
+
                 default:
                     speakDailyUnknownInstructions(uidIn);
                     break;
@@ -1053,6 +1087,53 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             speechInText += "\n2. Is the water running?\n";
             toSpeech.speak(" 3. Are any of the stalls locked?", TextToSpeech.QUEUE_ADD, null, "instruct4");
             speechInText += "\n3. Are any of the stalls locked?\n";
+
+            Calendar aCalender = Calendar.getInstance();
+            //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
+            //speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
+            switch (aCalender.get(Calendar.DAY_OF_WEEK))
+            {
+
+            }
+        }
+    }
+
+    public void speakDailyTechnician1Instructions(String uidIn)
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            toSpeech.speak("Technician " + getNameFromUID(uidIn) + " you are not authorized to work on this device", TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nTechnician " + getNameFromUID(uidIn) + " you are not authorized to work on this device. \n--------------------------------------------------------\n";
+
+
+
+            Calendar aCalender = Calendar.getInstance();
+            //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
+            //speechInText += "\n\nToday's Weekly Task:\n--------------------------------------------------------\n";
+            switch (aCalender.get(Calendar.DAY_OF_WEEK))
+            {
+
+            }
+        }
+    }
+
+
+    public void speakDailyTechnician2Instructions(String uidIn)
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            toSpeech.speak("You are authorized to work on this device, Technician " + getNameFromUID(uidIn) + ". Here are your instructions: ", TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nYou are authorized to work on this device, Technician " + getNameFromUID(uidIn) + ". Here are your instructions: \n--------------------------------------------------------\n";
+            toSpeech.speak(" 1. Remove the Panel", TextToSpeech.QUEUE_ADD, null, "instruct2");
+            speechInText += "\n1. Remove the Panel\n";
+            toSpeech.speak(" 2. Disconnect the Air Pipe", TextToSpeech.QUEUE_ADD, null, "instruct3");
+            speechInText += "\n2. Disconnect the Air Pipe\n";
+            toSpeech.speak(" 3. Replace the old filter", TextToSpeech.QUEUE_ADD, null, "instruct4");
+            speechInText += "\n3. Replace the old filter\n";
+            toSpeech.speak(" 4. Reconnect the Air Pipe", TextToSpeech.QUEUE_ADD, null, "instruct5");
+            speechInText += "\n4. Reconnect the Air Pipe\n";
+            toSpeech.speak(" 5. Replace the Panel", TextToSpeech.QUEUE_ADD, null, "instruct6");
+            speechInText += "\n5. Replace the Panel\n";
 
             Calendar aCalender = Calendar.getInstance();
             //toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);

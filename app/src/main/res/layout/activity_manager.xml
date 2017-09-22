@@ -91,6 +91,34 @@
                     map:layout_constraintTop_toBottomOf="@+id/addJanitorAlertButton"/>
 
                 <Button
+                    android:id="@+id/addTechnician1AlertButton"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/rounded_button"
+                    android:text="Add Class 1 Technician Alert"
+                    android:textColor="@color/cast_expanded_controller_text_color"
+                    map:layout_constraintHorizontal_bias="1.0"
+                    map:layout_constraintLeft_toLeftOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintRight_toRightOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintTop_toBottomOf="@+id/addSecurityAlertButton"/>
+
+                <Button
+                    android:id="@+id/addTechnician2AlertButton"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/rounded_button"
+                    android:text="Add Class 2 Technician Alert"
+                    android:textColor="@color/cast_expanded_controller_text_color"
+                    map:layout_constraintHorizontal_bias="1.0"
+                    map:layout_constraintLeft_toLeftOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintRight_toRightOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintTop_toBottomOf="@+id/addTechnician1AlertButton"/>
+
+                <Button
                     android:id="@+id/clearButton"
                     style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="0dp"
@@ -102,7 +130,7 @@
                     map:layout_constraintHorizontal_bias="0.0"
                     map:layout_constraintLeft_toLeftOf="@+id/addJanitorAlertButton"
                     map:layout_constraintRight_toRightOf="@+id/addJanitorAlertButton"
-                    map:layout_constraintTop_toBottomOf="@+id/addSecurityAlertButton"/>
+                    map:layout_constraintTop_toBottomOf="@+id/addTechnician2AlertButton"/>
 
                 <EditText
                     android:id="@+id/stationIDEditText"
