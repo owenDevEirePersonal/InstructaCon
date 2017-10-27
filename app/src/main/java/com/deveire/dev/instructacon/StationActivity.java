@@ -1008,8 +1008,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
-            toSpeech.speak("Here are your instructions, Sanitation Engineer " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
-            speechInText += "\nHere are your instructions, Sanitation Engineer " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
+            toSpeech.speak("Here are your instructions, Cleaner " + getNameFromUID(uidIn), TextToSpeech.QUEUE_ADD, null, "instruct1");
+            speechInText += "\nHere are your instructions, Cleaner " + getNameFromUID(uidIn) + ":\n--------------------------------------------------------\n";
             toSpeech.speak(" 1. Check slash change the toilet paper.", TextToSpeech.QUEUE_ADD, null, "instruct2");
             speechInText += "\n1. Check/Change the toilet paper.\n";
             toSpeech.speak(" 2. Mop the floor.", TextToSpeech.QUEUE_ADD, null, "instruct3");
@@ -2228,6 +2228,5 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
 
 /*
-
 
   */
