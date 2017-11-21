@@ -22,6 +22,9 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.ResultReceiver;
 import android.provider.Settings;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.NonNull;
@@ -59,10 +62,13 @@ import com.google.android.gms.maps.GoogleMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -70,7 +76,7 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class StationActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>
+public class StationActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, LocationListener, DownloadCallback<String>, RecognitionListener
 {
 
     private GoogleMap mMap;
@@ -109,6 +115,23 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private String speechInText;
     private HashMap<String, String> endOfSpeakIndentifier;
     private String currentTagName;
+    private final String textToSpeechID_Clarification = "Clarification";
+
+
+    private int scriptLine;
+
+    private SpeechRecognizer recog;
+    private Intent recogIntent;
+    private int pingingRecogFor;
+    private int previousPingingRecogFor;
+    private final int pingingRecogFor_FoodName = 1;
+    private final int pingingRecogFor_Confirmation = 2;
+    private final int pingingRecogFor_Clarification = 3;
+    private final int pingingRecogFor_ScriptedExchange = 4;
+    private final int pingingRecogFor_Nothing = -1;
+
+    private String[] currentPossiblePhrasesNeedingClarification;
+
 
     private Timer adSwapTimer;
     private int currentAdIndex;
@@ -226,10 +249,11 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final String SAVED_LOCATION_KEY = "79";
 
     private boolean pingingServer;
-    private final String serverIPAddress = "http://192.168.1.188:8080/InstructaConServlet/ICServlet";
+    private final String serverIP = "http://34.251.66.61:9080/food_safety_server";
     //private final String serverIPAddress = "http://api.eirpin.com/api/TTServlet";
     private String serverURL;
     private NetworkFragment aNetworkFragment;
+    private JSONObject jsonToPass;
     //[/Network and periodic location update, Variables]
 
 
@@ -295,7 +319,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         pingingServer = false;
 
         //aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), "https://192.168.1.188:8080/smrttrackerserver-1.0.0-SNAPSHOT/hello?isDoomed=yes");
-        serverURL = serverIPAddress + "?request=storelocation" + Settings.Secure.ANDROID_ID.toString() + "&name=" + "&lat=" + 0000 + "&lon=" + 0000;
+        serverURL = serverIP + "?request=storelocation" + Settings.Secure.ANDROID_ID.toString() + "&name=" + "&lat=" + 0000 + "&lon=" + 0000;
 
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -361,6 +385,18 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         pingingServerFor_alertData = false;
         alertDataText = (TextView) findViewById(R.id.kegDataText);
 
+
+        recog = SpeechRecognizer.createSpeechRecognizer(getApplicationContext());
+        recog.setRecognitionListener(this);
+        recogIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"en");
+        recogIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getApplicationContext().getPackageName());
+        recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+        recogIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+
+        currentPossiblePhrasesNeedingClarification = new String[]{};
+
+
         toSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status)
@@ -424,6 +460,18 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                     }
                                 }
                             }, 60000); //after 1 minute, revert to ads.
+                        }
+                        else if (utteranceId.matches("Scripted"))
+                        {
+                            pingingRecogFor = pingingRecogFor_ScriptedExchange;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    recog.startListening(recogIntent);
+                                }
+                            });
                         }
                         //toSpeech.shutdown();
                     }
@@ -509,6 +557,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         stopInProgressTimer = new Timer();
 
         restoreSavedValues(savedInstanceState);
+
+        scriptLine = 0;
     }
 
     @Override
@@ -729,84 +779,102 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     {
         retrieveData();
 
-        currentTagName = findRowFromID(tagIDin).getName();
-
-        switch (findRowFromID(tagIDin).getType())
+        if(findRowFromID(tagIDin) == null)
         {
-            case "Security Guard": currentTagType = ID_TYPE_Security; break;
-            case "Janitor": currentTagType = ID_TYPE_Janitor; break;
-            case "Techician Class 1": currentTagType = ID_TYPE_Class1_Technician; break;
-            case "Techician Class 2": currentTagType = ID_TYPE_Class2_Technician; break;
-            default: currentTagType = 0; break;
+            speakDailyUnknownInstructions(tagIDin);
         }
-
-
-        //mapText.setText(result);
-
-        ArrayList<String> returnAlerts = new ArrayList<String>();
-        for (AlertsRow arow: allAlerts)
+        else
         {
-            if(currentTagType == ID_TYPE_Janitor)
-            {
-                if(arow.getType().matches("Janitor") && arow.isActive())
-                {
-                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
-                    if(arow.getStationID().matches(stationIDin))
-                    {
-                        arow.setActive(false);
-                    }
-                }
+            currentTagName = findRowFromID(tagIDin).getName();
 
-            }
-            else if(currentTagType == ID_TYPE_Security)
+
+            switch (findRowFromID(tagIDin).getType())
             {
-                if(arow.getType().matches("Security Guard") && arow.isActive())
+                case "Security Guard":
+                    currentTagType = ID_TYPE_Security;
+                    break;
+                case "Janitor":
+                    currentTagType = ID_TYPE_Janitor;
+                    break;
+                case "Techician Class 1":
+                    currentTagType = ID_TYPE_Class1_Technician;
+                    break;
+                case "Techician Class 2":
+                    currentTagType = ID_TYPE_Class2_Technician;
+                    break;
+                default:
+                    currentTagType = 0;
+                    break;
+            }
+
+
+            //mapText.setText(result);
+
+            ArrayList<String> returnAlerts = new ArrayList<String>();
+            for (AlertsRow arow : allAlerts)
+            {
+                if (currentTagType == ID_TYPE_Janitor)
                 {
-                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
-                    if(arow.getStationID().matches(stationIDin))
+                    if (arow.getType().matches("Janitor") && arow.isActive())
                     {
-                        arow.setActive(false);
+                        returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                        if (arow.getStationID().matches(stationIDin))
+                        {
+                            arow.setActive(false);
+                        }
+                    }
+
+                }
+                else if (currentTagType == ID_TYPE_Security)
+                {
+                    if (arow.getType().matches("Security Guard") && arow.isActive())
+                    {
+                        returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                        if (arow.getStationID().matches(stationIDin))
+                        {
+                            arow.setActive(false);
+                        }
+                    }
+                }
+                else if (currentTagType == ID_TYPE_Class1_Technician)
+                {
+                    if (arow.getType().matches("Technician Class 1") && arow.isActive())
+                    {
+                        returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                        if (arow.getStationID().matches(stationIDin))
+                        {
+                            arow.setActive(false);
+                        }
+                    }
+                }
+                else if (currentTagType == ID_TYPE_Class2_Technician)
+                {
+                    if ((arow.getType().matches("Technician Class 2") || arow.getType().matches("Technician Class 1")) && arow.isActive())
+                    {
+                        returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
+                        if (arow.getStationID().matches(stationIDin))
+                        {
+                            arow.setActive(false);
+                        }
                     }
                 }
             }
-            else if(currentTagType == ID_TYPE_Class1_Technician)
-            {
-                if(arow.getType().matches("Technician Class 1") && arow.isActive())
-                {
-                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
-                    if(arow.getStationID().matches(stationIDin))
-                    {
-                        arow.setActive(false);
-                    }
-                }
-            }
-            else if(currentTagType == ID_TYPE_Class2_Technician)
-            {
-                if((arow.getType().matches("Technician Class 2") ||  arow.getType().matches("Technician Class 1") ) && arow.isActive())
-                {
-                    returnAlerts.add(arow.getAlert() + " in " + arow.getStationID());
-                    if(arow.getStationID().matches(stationIDin))
-                    {
-                        arow.setActive(false);
-                    }
-                }
-            }
+
+            Calendar aCalender = Calendar.getInstance();
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            java.util.Date currentTimeStamp = aCalender.getTime();
+            allSignIns.add(new SignInsRow(stationIDin, tagIDin, dateFormat.format(currentTimeStamp)));
+
+            speakAlerts(returnAlerts);
+            saveData();
         }
-
-        Calendar aCalender = Calendar.getInstance();
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        java.util.Date currentTimeStamp = aCalender.getTime();
-        allSignIns.add(new SignInsRow(stationIDin, tagIDin, dateFormat.format(currentTimeStamp)));
-
-        speakAlerts(returnAlerts);
-        saveData();
     }
 
     private void retrieveSecurityAlerts(String stationIDin, String tagIDin)
     {
         if(!stationIDin.matches(""))
         {
-            serverURL = serverIPAddress + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_")  + "&tagid=" + tagIDin;
+            serverURL = serverIP + "?request=getsecurityalertsfor" + "&stationid=" + stationIDin.replace(" ", "_")  + "&tagid=" + tagIDin;
             //lat and long are doubles, will cause issue? nope
             pingingServerFor_alertData = true;
             Log.i("Network Update", "Attempting to start download from retrieveAlerts. " + serverURL);
@@ -1147,13 +1215,20 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
     public void speakDailyUnknownInstructions(String uidIn)
     {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        /*if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             speechInText = "";
             adImageView.setVisibility(View.INVISIBLE);
             toSpeech.speak("Your ID, " + uidIn.toString() + ", is not on record,", TextToSpeech.QUEUE_ADD, null, "instruct1");
             toSpeech.speak("  please report to your supervisor.", TextToSpeech.QUEUE_ADD, null, "instruct2");
             speechInText += "\nYour id, " + uidIn.toString() + ", is not on record, please report to your supervisor.\n";
+        }*/
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            speechInText = "";
+            adImageView.setVisibility(View.INVISIBLE);
+            toSpeech.speak(" Good Morning Dan, what can Vida do for you today?", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+            speechInText += "\nWhat is the trouble ticket?.\n";
         }
     }
 
@@ -2005,6 +2080,42 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
 
     //**********[Location Update and server pinging Code]
+    private void postDataToBrightspot()
+    {
+        try
+        {
+
+            serverURL = serverIP + "?data=" + URLEncoder.encode(jsonToPass.toString(), "UTF-8");
+            //lat and long are doubles, will cause issue? nope
+            Log.i("Network Update", "Attempting to start download from scanKeg. " + serverURL);
+            aNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), serverURL);
+        }
+        catch (Exception e)
+        {
+            Log.e("Network Update", "Error: " + e.toString());
+        }
+
+    }
+
+    private void createTroubleJson()
+    {
+        JSONObject paras = new JSONObject();
+
+        jsonToPass = new JSONObject();
+        try
+        {
+            jsonToPass.put("sender", "android_client");
+            jsonToPass.put("method_name", "toilet_trouble_ticket");
+            jsonToPass.put("params", paras);
+        }
+        catch (JSONException e)
+        {
+            Log.e("WebSocket", "Json Error while creating jsonToPass Json: " + e.toString());
+        }
+
+        Log.i("WebSocket", "Json Creation Complete: " + jsonToPass.toString());
+    }
+
     @Override
     public void onConnectionFailed(ConnectionResult result) {
         // An unresolvable error has occurred and a connection to Google APIs
@@ -2144,14 +2255,14 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             {
                 mapText.setText("Error: network unavaiable");
                 Log.e("Network UPDATE", "Error: network unavaiable, error: " + result);
-                speakNetworkError();
+                //speakNetworkError();
             }
         }
         else
         {
             mapText.setText("Error: network unavaiable");
             Log.e("Network UPDATE", "Error: network unavaiable");
-            speakNetworkError();
+            //speakNetworkError();
         }
 
         Log.e("Download Output", "" + result);
@@ -2224,7 +2335,255 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         }
     }
 //**********[/Location Update and server pinging Code]
+
+
+
+
+    //++++++++[Recognition Listener Code]
+    @Override
+    public void onReadyForSpeech(Bundle bundle)
+    {
+        Log.e("Recog", "ReadyForSpeech");
+    }
+
+    @Override
+    public void onBeginningOfSpeech()
+    {
+        Log.e("Recog", "BeginningOfSpeech");
+    }
+
+    @Override
+    public void onRmsChanged(float v)
+    {
+        Log.e("Recog", "onRmsChanged");
+    }
+
+    @Override
+    public void onBufferReceived(byte[] bytes)
+    {
+        Log.e("Recog", "onBufferReceived");
+    }
+
+    @Override
+    public void onEndOfSpeech()
+    {
+        Log.e("Recog", "End ofSpeech");
+        recog.stopListening();
+    }
+
+    @Override
+    public void onError(int i)
+    {
+        switch (i)
+        {
+            //case RecognizerIntent.RESULT_AUDIO_ERROR: Log.e("Recog", "RESULT AUDIO ERROR"); break;
+            //case RecognizerIntent.RESULT_CLIENT_ERROR: Log.e("Recog", "RESULT CLIENT ERROR"); break;
+            //case RecognizerIntent.RESULT_NETWORK_ERROR: Log.e("Recog", "RESULT NETWORK ERROR"); break;
+            //case RecognizerIntent.RESULT_SERVER_ERROR: Log.e("Recog", "RESULT SERVER ERROR"); break;
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: Log.e("Recog", "SPEECH TIMEOUT ERROR"); break;
+            case SpeechRecognizer.ERROR_SERVER: Log.e("Recog", "SERVER ERROR"); break;
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: Log.e("Recog", "BUSY ERROR"); break;
+            case SpeechRecognizer.ERROR_NO_MATCH: Log.e("Recog", "NO MATCH ERROR");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                {
+                    toSpeech.speak("No Response Detected, aborting.", TextToSpeech.QUEUE_FLUSH, null, null);
+                }
+                break;
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: Log.e("Recog", "NETWORK TIMEOUT ERROR"); break;
+            case SpeechRecognizer.ERROR_NETWORK: Log.e("Recog", "TIMEOUT ERROR"); break;
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: Log.e("Recog", "INSUFFICENT PERMISSIONS ERROR"); break;
+            case SpeechRecognizer.ERROR_CLIENT: Log.e("Recog", "CLIENT ERROR"); break;
+            case SpeechRecognizer.ERROR_AUDIO: Log.e("Recog", "AUDIO ERROR"); break;
+            default: Log.e("Recog", "UNKNOWN ERROR: " + i); break;
+        }
+    }
+
+
+
+    @Override
+    public void onResults(Bundle bundle)
+    {
+        ArrayList<String> matches = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        recogResultLogic(matches);
+
+    }
+
+    @Override
+    public void onPartialResults(Bundle bundle)
+    {
+        Log.e("Recog", "Partial Result");
+    }
+
+    @Override
+    public void onEvent(int i, Bundle bundle)
+    {
+        Log.e("Recog", "onEvent");
+    }
+//++++++++[/Recognition Listener Code]
+
+    //++++++++[Recognition Other Code]
+    private String sortThroughRecognizerResults(ArrayList<String> results, String[] matchablePhrases)
+    {
+        for (String aResult: results)
+        {
+            Log.i("Recog", "Sorting results for result: " + aResult);
+            for (String aPhrase: matchablePhrases)
+            {
+                Log.i("Recog", "Sorting results for result: " + aResult.toLowerCase().replace("-", " ") + " and Phrase: " + aPhrase.toLowerCase());
+                if((aResult.toLowerCase().replace("-"," ")).contains(aPhrase.toLowerCase()))
+                {
+                    Log.i("Recog", "Match Found");
+                    return aPhrase;
+                }
+            }
+        }
+        Log.i("Recog", "No matches found, returning empty string \"\" .");
+        return "";
+    }
+
+
+
+    private void sortThroughRecognizerResultsForAllPossiblities(ArrayList<String> results, String[] matchablePhrases)
+    {
+        ArrayList<String> possibleResults = new ArrayList<String>();
+        for (String aResult: results)
+        {
+            Log.i("Recog", "All Possiblities, Sorting results for result: " + aResult);
+            for (String aPhrase: matchablePhrases)
+            {
+                Boolean isDuplicate = false;
+                Log.i("Recog", "All Possiblities, Sorting results for result: " + aResult.toLowerCase().replace("-", " ") + " and Phrase: " + aPhrase.toLowerCase());
+                for (String b: possibleResults)
+                {
+                    if(b.matches(aPhrase)){isDuplicate = true; break;}
+                }
+
+                if((aResult.toLowerCase().replace("-"," ")).contains(aPhrase.toLowerCase()) && !isDuplicate)
+                {
+                    Log.i("Recog", "All Possiblities, Match Found");
+                    possibleResults.add(aPhrase);
+                }
+            }
+        }
+
+        currentPossiblePhrasesNeedingClarification = possibleResults.toArray(new String[possibleResults.size()]);
+        //if there is more than 1 keyword in the passed phrase, the method will list those keywords back to the user and ask them to repeat  the correct 1.
+        //This in turn will call recogResult from the utterance listener and trigger the pinging for Clarification case where the repeated word will then be used
+        //to resolve the logic of the previous call to recogResult.
+        if(possibleResults.size() > 1)
+        {
+            String clarificationString = "I'm sorry but did you mean.";
+
+            for (String a: possibleResults)
+            {
+                clarificationString += (". " + a);
+                if(!possibleResults.get(possibleResults.size() - 1).matches(a))
+                {
+                    clarificationString += ". or";
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            {
+                pingingRecogFor = pingingRecogFor_Clarification;
+                toSpeech.speak(clarificationString, TextToSpeech.QUEUE_FLUSH, null, textToSpeechID_Clarification);
+            }
+        }
+        //if there is only 1 keyword in the passed phrase, the method skips speech confirmation and immediately calls it's own listener in recogResults,
+        // which(given that there is only 1 possible match, will skip to resolving the previous call to recogResult's logic)
+        else if (possibleResults.size() == 1)
+        {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            {
+                pingingRecogFor = pingingRecogFor_Clarification;
+                recogResultLogic(possibleResults);
+                //toSpeech.speak("h", TextToSpeech.QUEUE_FLUSH, null, textToSpeechID_Clarification);
+            }
+        }
+        else
+        {
+            Log.i("Recog", "No matches found, Requesting Repetition .");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            {
+                toSpeech.speak("Can you please repeat that?", TextToSpeech.QUEUE_FLUSH, null, textToSpeechID_Clarification);
+            }
+        }
+    }
+
+    private String sortThroughRecognizerResults(ArrayList<String> results, String matchablePhrase)
+    {
+        for (String aResult: results)
+        {
+            Log.i("Recog", "Sorting results for result: " + aResult.replace("-", " ") + " and Phrase: " + matchablePhrase.toLowerCase());
+            if((aResult.replace("-", " ")).contains(matchablePhrase.toLowerCase()))
+            {
+                Log.i("Recog", "Match Found");
+                return matchablePhrase;
+            }
+        }
+        Log.i("Recog", "No matches found, returning empty string \"\" .");
+        return "";
+    }
+
+
+    //CALLED FROM: RecogListener onResults()
+    private void recogResultLogic(ArrayList<String> matches)
+    {
+        String[] phrases;
+        Log.i("Recog", "Results recieved: " + matches);
+        String response = "-Null-";
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            Log.i("Recog", "Pinging For: " + pingingRecogFor);
+            switch (pingingRecogFor)
+            {
+                case pingingRecogFor_Clarification:
+
+                    Log.i("Recog", "onResult for Clarification");
+                    phrases = currentPossiblePhrasesNeedingClarification;
+                    response = sortThroughRecognizerResults(matches, phrases);
+                    Log.i("Recog", "onClarification: Response= " + response);
+                    if(response.matches(""))
+                    {
+                        Log.i("Recog", "Unrecongised response: " + response);
+                        pingingRecogFor = pingingRecogFor_Clarification;
+                        ArrayList<String> copyOfCurrentPossiblePhrases = new ArrayList<String>(Arrays.asList(currentPossiblePhrasesNeedingClarification));
+                        sortThroughRecognizerResultsForAllPossiblities(copyOfCurrentPossiblePhrases, phrases);
+                    }
+                    else
+                    {
+                        Log.i("Recog", "Clarification Returned: " + response);
+                    }
+                    break;
+
+                case pingingRecogFor_ScriptedExchange:
+
+                    scriptLine++;
+
+                    switch (scriptLine)
+                    {
+                        case 1: toSpeech.speak("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing C E O's toilet.  . , Does this resolve the issue you have raised, if yes, please say: okay , or ,  not okay after the tone", TextToSpeech.QUEUE_FLUSH, null, "Scripted"); break;
+                        case 2: toSpeech.speak("Dan, can VIDA help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
+                            scriptLine = 0;
+                            createTroubleJson();
+                            postDataToBrightspot();
+                            break;
+                    }
+
+
+                    break;
+            }
+        }
+    }
+//++++++++[/Recognition Other Code]
+
+
+
 }
+
+
 
 
 /*
