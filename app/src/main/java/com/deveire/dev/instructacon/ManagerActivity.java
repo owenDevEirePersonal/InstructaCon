@@ -340,6 +340,7 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
         for (int i = 0; i < signInsCount; i++)
         {
             allSignInRows.add(new SignInsRow(savedData.getString("signIns_stationID" + i, "ERROR"), savedData.getString("signIns_tagID" + i, "ERROR"), savedData.getString("signIns_timestamp" + i, "ERROR")));
+            Log.i("Signins", savedData.getString("signIns_stationID" + i, "ERROR") + savedData.getString("signIns_tagID" + i, "ERROR") + savedData.getString("signIns_timestamp" + i, "ERROR"));
         }
     }
 
@@ -459,8 +460,11 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
             int i = 0;
             for (SignInsRow crow: current3LatestSignins)
             {
+                String aSignin;
+                aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID() + " at " + format.format(crow.getTimestamp());
+                Log.i("Signin", "" + aSignin);
 
-                String aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID()+ " at " + format.format(crow.getTimestamp());
+
                 SpannableString bSignin = new SpannableString("");
 
                 //if currentRow is not the oldest row in current3LatestSignins
@@ -518,6 +522,23 @@ public class ManagerActivity extends FragmentActivity implements DownloadCallbac
 
 
                 i++;
+            }
+
+            //for all non registered tags
+            String aSignin;
+            for (SignInsRow aRow: allSignInRows)
+            {
+                if (findRowFromID(aRow.getTagID()) == null)
+                {
+                    //if signin does not match any registered tag
+                    aSignin = "Other ID " + aRow.getTagID() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
+                    Log.i("Signin", "" + aSignin);
+                    SpannableString bSignin = new SpannableString("");
+                    bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                    allSignins.add(aSignin);
+                    fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
+                }
             }
 
         }
