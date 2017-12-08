@@ -128,6 +128,10 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final int pingingRecogFor_Confirmation = 2;
     private final int pingingRecogFor_Clarification = 3;
     private final int pingingRecogFor_ScriptedExchange = 4;
+    private final int pingingRecogFor_CleanerCommands = 5;
+    private final int pingingRecogFor_CleanerTroubleTicket1 = 6;
+    private final int pingingRecogFor_CleanerTroubleTicket2 = 7;
+    private final int pingingRecogFor_CleanerTroubleTicket1a = 8;
     private final int pingingRecogFor_Nothing = -1;
 
     private String[] currentPossiblePhrasesNeedingClarification;
@@ -423,7 +427,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         {
                             try
                             {
-                                Thread.sleep(30000);
+                                Thread.sleep(3000);
                             } catch (InterruptedException e)
                             {
                                 e.printStackTrace();
@@ -435,6 +439,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 public void run()
                                 {
                                     inProgressImage.setVisibility(View.VISIBLE);
+                                    inProgressImage.setImageResource(R.drawable.inprogress_ad2);
                                     instructionsDataText.setVisibility(View.INVISIBLE);
                                     instructionsDataText.setText("No Instructions.");
                                     alertDataText.setVisibility(View.INVISIBLE);
@@ -465,8 +470,17 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                     }
                                 }
                             }, 60000); //after 1 minute, revert to ads.
+
+
                         }
-                        else if (utteranceId.matches("End") || utteranceId.matches("EndError"))
+                        else if (utteranceId.matches("Instructions End") && currentTagType ==ID_TYPE_Janitor)
+                        {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                            {
+                                toSpeech.speak("Can Vida help you with anything?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                            }
+                        }
+                        else if (utteranceId.matches("End") || utteranceId.matches("EndError") || (utteranceId.matches("Instructions End") && currentTagType != ID_TYPE_Janitor))
                         {
                             displayingInProgress = false;
                             runOnUiThread(new Runnable()
@@ -492,6 +506,61 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                     recog.startListening(recogIntent);
                                 }
                             });
+                        }
+                        else if (utteranceId.matches("AnythingElse"))
+                        {
+                            pingingRecogFor = pingingRecogFor_CleanerCommands;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    recog.startListening(recogIntent);
+                                }
+                            });
+
+                        }
+                        else if (utteranceId.matches("TroubleTicket1"))
+                        {
+
+                            pingingRecogFor = pingingRecogFor_CleanerTroubleTicket1;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    recog.startListening(recogIntent);
+                                }
+                            });
+
+                        }
+                        else if (utteranceId.matches("TroubleTicket2"))
+                        {
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    inProgressImage.setVisibility(View.VISIBLE);
+                                    inProgressImage.setImageResource(R.drawable.leak);
+                                    instructionsDataText.setVisibility(View.INVISIBLE);
+                                    instructionsDataText.setText("No Instructions.");
+                                    alertDataText.setVisibility(View.INVISIBLE);
+                                    alertDataText.setText("");
+                                }
+                            });
+                            displayingInProgress = true;
+
+                            pingingRecogFor = pingingRecogFor_CleanerTroubleTicket2;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    recog.startListening(recogIntent);
+                                }
+                            });
+
                         }
                         //toSpeech.shutdown();
                     }
@@ -1093,11 +1162,19 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     speakDailyUnknownInstructions(uidIn);
                     break;
             }
-            toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "End");
+            toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "Instructions End");
             alertDataText.setText(speechInText.split("Here are your instructions")[0]);
             Log.i("NewAlerts", speechInText.split("Here are your instructions")[0]);
-            instructionsDataText.setText("Here are your instructions" + speechInText.split("Here are your instructions")[1]);
-            Log.i("NewAlerts", "Here are your instructions" + speechInText.split("Here are your instructions")[1]);
+            if(speechInText.split("Here are your instructions").length > 1)
+            {
+                instructionsDataText.setText("Here are your instructions" + speechInText.split("Here are your instructions")[1]);
+                Log.i("NewAlerts", "Here are your instructions" + speechInText.split("Here are your instructions")[1]);
+            }
+            else
+            {
+                instructionsDataText.setText("");
+            }
+
             //TODO Fix this splitting text issue
 
         }
@@ -1115,12 +1192,12 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             speechInText += "\n2. Mop the floor.\n";
             toSpeech.speak(" 3. Empty the Trash.", TextToSpeech.QUEUE_ADD, null, "instruct4");
             speechInText += "\n3. Empty the Trash.\n";
-            toSpeech.speak(" 4. Wipe the Mirror", TextToSpeech.QUEUE_ADD, null, null);
+            /*toSpeech.speak(" 4. Wipe the Mirror", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 4. Wipe the Mirror.\n";
             toSpeech.speak(" 5. Clean the Drains", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 5. Clean the Drains.\n";
             toSpeech.speak(" 6. Change the Towels", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 6. Change the Towels.\n";
+            speechInText += "\n 6. Change the Towels.\n";*/
 
             Calendar aCalender = Calendar.getInstance();
             toSpeech.speak(" Today's Weekly Task:", TextToSpeech.QUEUE_ADD, null, null);
@@ -1149,7 +1226,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
                 case Calendar.FRIDAY:
                     toSpeech.speak(" 7. Scrub the floors and clean the grout", TextToSpeech.QUEUE_ADD, null, null);
-                    speechInText += "\n 7. Scrubs the floors and clean the grout.\n";
+                    speechInText += "\n 7. Scrub the floors and clean the grout.\n";
                     break;
                 case Calendar.SATURDAY:
                     toSpeech.speak(" 7. Clean the toilet bowls, the sinks and the tubs.", TextToSpeech.QUEUE_ADD, null, null);
@@ -1157,12 +1234,12 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     break;
             }
 
-            toSpeech.speak(" Monthly Tasks Remaining: ", TextToSpeech.QUEUE_ADD, null, null);
+            /*toSpeech.speak(" Monthly Tasks Remaining: ", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n\n Monthly Tasks Remaing:\n--------------------------------------------------------\n";
             toSpeech.speak(" 8. Clean the Windows and Vents.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 8. Clean the Windows and Vents.\n";
             toSpeech.speak(" 9. Clean the showers.", TextToSpeech.QUEUE_ADD, null, null);
-            speechInText += "\n 9. Clean the showers.\n";
+            speechInText += "\n 9. Clean the showers.\n";*/
             /*toSpeech.speak(" 10. Dust the ceilings.", TextToSpeech.QUEUE_ADD, null, null);
             speechInText += "\n 10. Dust the ceilings.\n";
             toSpeech.speak(" 11. Wipe the front and back of the doors.", TextToSpeech.QUEUE_ADD, null, null);
@@ -1259,6 +1336,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             speechInText = "";
             adImageView.setVisibility(View.INVISIBLE);
             toSpeech.speak(" Good Morning Dan, what can Vida do for you today?", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+            alertDataText.setText("Registering Trouble Ticket");
+            instructionsDataText.setText("Good Morning Dan, what can Vida do for you today?");
             speechInText += "\nWhat is the trouble ticket?.\n";
         }
     }
@@ -1289,6 +1368,38 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         Log.i("NewAlert", "" + allAlerts.get(allAlerts.size() - 1).getStationID() + " " + allAlerts.get(allAlerts.size() - 1).getAlert() + " true " + allAlerts.get(allAlerts.size() - 1).getType());
         saveData();
     }
+
+    private void createNewTechnicianClass1Alert(String alertType)
+    {
+        String alertText = "";
+        switch (alertType)
+        {
+            case "toilet": alertText = "Leaking Toilet Cistern"; break;
+            case "hvac": alertText = "Leaking Hvac"; break;
+            case "sink": alertText = "Leaking Sink"; break;
+            case "ceiling": alertText = "Damp patch in ceiling"; break;
+            case "tiles": alertText = "Broken Tiles"; break;
+        }
+
+        allAlerts.add(new AlertsRow(nameEditText.getText().toString(), alertText, true, "Technician Class 1"));
+        Log.i("NewAlert", "" + nameEditText.getText().toString() + " " + alertText + " true " + "Technician Class 1");
+        Log.i("NewAlert", "" + allAlerts.get(allAlerts.size() - 1).getStationID() + " " + allAlerts.get(allAlerts.size() - 1).getAlert() + " true " + allAlerts.get(allAlerts.size() - 1).getType());
+        saveData();
+    }
+
+    /*private void createNewTechnicianClass1Alert(String alertType)
+    {
+        String alertText = "";
+        switch (alertType)
+        {
+            case "": alertText = "Leaking Toilet Cistern"; break;
+        }
+
+        allAlerts.add(new AlertsRow(nameEditText.getText().toString(), alertText, true, "Janitor"));
+        Log.i("NewAlert", "" + nameEditText.getText().toString() + " " + alertText + " true " + "Janitor");
+        Log.i("NewAlert", "" + allAlerts.get(allAlerts.size() - 1).getStationID() + " " + allAlerts.get(allAlerts.size() - 1).getAlert() + " true " + allAlerts.get(allAlerts.size() - 1).getType());
+        saveData();
+    }*/
 
 //---[Headset Code]
 /*
@@ -1525,6 +1636,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                         {
                                             inProgressImage.setVisibility(View.INVISIBLE);
                                             instructionsDataText.setVisibility(View.VISIBLE);
+                                            alertDataText.setVisibility(View.VISIBLE);
                                             adImageView.setVisibility(View.VISIBLE);
                                         }
                                     }
@@ -2606,7 +2718,10 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         case 1:
                             if(!sortThroughRecognizerResults(matches, new String[]{"Water", "Leak", "Leaking"}).matches(""))
                             {
-                                toSpeech.speak("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing C E O's toilet.  . , Does this resolve the issue you have raised, if yes, please say: okay , or ,  not okay after the tone", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+                                toSpeech.speak("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing Ceo's bathroom.  . , Does this resolve the issue you have raised, if yes, please say: okay , or ,  not okay after the tone", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+                                alertDataText.setText("Registering Trouble Ticket");
+                                instructionsDataText.setText("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing Ceo's bathroom. Does this resolve the issue you have raised, if yes, please say okay or not okay after the tone");
+
                             }
                             else
                             {
@@ -2617,6 +2732,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             if(!sortThroughRecognizerResults(matches, new String[]{"ok"}).matches(""))
                             {
                                 toSpeech.speak("Dan, can VeDa help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                instructionsDataText.setText("Dan, can VIDA help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket AT234 has been addressed.");
                                 scriptLine = 0;
                                 createTroubleJson();
                                 postDataToBrightspot();
@@ -2628,6 +2744,44 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
                             }
                             break;
+                    }
+                break;
+
+                case pingingRecogFor_CleanerCommands:
+                    if(!sortThroughRecognizerResults(matches, new String[]{"trouble ticket", "no"}).matches(""))
+                    {
+                        if(sortThroughRecognizerResults(matches, new String[]{"trouble ticket"}).matches("trouble ticket"))
+                        {
+                            toSpeech.speak("What is the problem?", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicket1");
+                        }
+                        else if(sortThroughRecognizerResults(matches, new String[]{"no"}).matches("no"))
+                        {
+                            toSpeech.speak("Ok", TextToSpeech.QUEUE_FLUSH, null, "End");
+                        }
+                    }
+                break;
+
+                case pingingRecogFor_CleanerTroubleTicket1:
+                    String matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"Water", "Leak", "tiles"});
+                    if(!matchedKeyword.matches(""))
+                    {
+                        if(matchedKeyword.matches("Leak") || matchedKeyword.matches("Water"))
+                        {
+                            toSpeech.speak("Sounds like a leak, is the leak in a toilet, a sink, the ceiling or a H vac.", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicket2");
+                        }
+                        else if (matchedKeyword.matches("tiles"))
+                        {
+                            createNewTechnicianClass1Alert(matchedKeyword);
+                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintance. Thank you for your time. Is there anything else Vida can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                        }
+                    }
+                break;
+
+                case pingingRecogFor_CleanerTroubleTicket2:
+                    if(!sortThroughRecognizerResults(matches, new String[]{"sink", "pipe", "toilet"}).matches(""))
+                    {
+                        createNewTechnicianClass1Alert(sortThroughRecognizerResults(matches, new String[]{"sink", "pipe", "toilet"}));
+                        toSpeech.speak("Registering Trouble ticket, thank you for your time. Is there anything else Vida can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                     }
                 break;
             }
