@@ -125,7 +125,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private int pingingRecogFor;
     private int previousPingingRecogFor;
     private final int pingingRecogFor_FoodName = 1;
-    private final int pingingRecogFor_Confirmation = 2;
+    private final int pingingRecogFor_TroubleTicketConfirmation = 2;
     private final int pingingRecogFor_Clarification = 3;
     private final int pingingRecogFor_ScriptedExchange = 4;
     private final int pingingRecogFor_CleanerCommands = 5;
@@ -135,6 +135,14 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final int pingingRecogFor_Nothing = -1;
 
     private String[] currentPossiblePhrasesNeedingClarification;
+
+    //[Experimental Recog instantly stopping BugFix Variables]
+    private boolean recogIsRunning;
+    private Timer recogDefibulatorTimer;
+    private TimerTask recogDefibulatorTask; //will check to see if recogIsRunning and if not will destroy and instanciate recog, as recog sometimes kills itself silently
+    //requiring a restart. This loop will continually kill and restart recog, preventing it from killing itself off.
+    private RecognitionListener recogListener;
+    //[/Experimental Recog instantly stopping BugFix Variables]
 
 
     private Timer adSwapTimer;
@@ -148,6 +156,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final int ID_TYPE_Class2_Technician = 4;
     private int currentTagType;
 
+    private String UnrecognisedTroubleTicketText;
 
     private boolean displayingInProgress;
     private Timer stopInProgressTimer;
@@ -392,13 +401,40 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         alertDataText = (TextView) findViewById(R.id.alertDataText);
 
 
+        recogIsRunning = false;
         recog = SpeechRecognizer.createSpeechRecognizer(getApplicationContext());
-        recog.setRecognitionListener(this);
+        recogListener = this;
+        recog.setRecognitionListener(recogListener);
         recogIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"en");
         recogIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getApplicationContext().getPackageName());
         recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
         recogIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        /*recogDefibulatorTimer = new Timer();
+        recogDefibulatorTask = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if(!recogIsRunning)
+                        {
+                            recog.destroy();
+                            recog = SpeechRecognizer.createSpeechRecognizer(getApplicationContext());
+                            recog.setRecognitionListener(recogListener);
+                        }
+                    }
+                });
+            }
+        };
+        recogDefibulatorTimer.schedule(recogDefibulatorTask, 0, 4000);*/
+
+
+
 
         currentPossiblePhrasesNeedingClarification = new String[]{};
 
@@ -477,7 +513,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                             {
-                                toSpeech.speak("Can Vida help you with anything?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                                toSpeech.speak("Can I help you with anything?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                             }
                         }
                         else if (utteranceId.matches("End") || utteranceId.matches("EndError") || (utteranceId.matches("Instructions End") && currentTagType != ID_TYPE_Janitor))
@@ -503,7 +539,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 @Override
                                 public void run()
                                 {
-                                    recog.startListening(recogIntent);
+                                    startRecogListening();
                                 }
                             });
                         }
@@ -515,7 +551,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 @Override
                                 public void run()
                                 {
-                                    recog.startListening(recogIntent);
+                                    startRecogListening();
                                 }
                             });
 
@@ -529,7 +565,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 @Override
                                 public void run()
                                 {
-                                    recog.startListening(recogIntent);
+                                    startRecogListening();
                                 }
                             });
 
@@ -557,10 +593,22 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 @Override
                                 public void run()
                                 {
-                                    recog.startListening(recogIntent);
+                                    startRecogListening();
                                 }
                             });
 
+                        }
+                        else if (utteranceId.matches("TroubleTicketConfirm"))
+                        {
+                            pingingRecogFor = pingingRecogFor_TroubleTicketConfirmation;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    startRecogListening();
+                                }
+                            });
                         }
                         //toSpeech.shutdown();
                     }
@@ -1335,9 +1383,9 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         {
             speechInText = "";
             adImageView.setVisibility(View.INVISIBLE);
-            toSpeech.speak(" Good Morning Dan, what can Vida do for you today?", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+            toSpeech.speak(" Good Morning Dan, what can I do for you today?", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
             alertDataText.setText("Registering Trouble Ticket");
-            instructionsDataText.setText("Good Morning Dan, what can Vida do for you today?");
+            instructionsDataText.setText("Good Morning Dan, what can I do for you today?");
             speechInText += "\nWhat is the trouble ticket?.\n";
         }
     }
@@ -1379,6 +1427,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             case "sink": alertText = "Leaking Sink"; break;
             case "ceiling": alertText = "Damp patch in ceiling"; break;
             case "tiles": alertText = "Broken Tiles"; break;
+            default: alertText = alertType; break;
         }
 
         allAlerts.add(new AlertsRow(nameEditText.getText().toString(), alertText, true, "Technician Class 1"));
@@ -2495,12 +2544,14 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     public void onReadyForSpeech(Bundle bundle)
     {
         Log.e("Recog", "ReadyForSpeech");
+        //recogIsRunning = false;
     }
 
     @Override
     public void onBeginningOfSpeech()
     {
         Log.e("Recog", "BeginningOfSpeech");
+        //recogIsRunning = true;
     }
 
     @Override
@@ -2684,6 +2735,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         String[] phrases;
         Log.i("Recog", "Results recieved: " + matches);
         String response = "-Null-";
+        String matchedKeyword = "";
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
@@ -2732,7 +2784,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             if(!sortThroughRecognizerResults(matches, new String[]{"ok"}).matches(""))
                             {
                                 toSpeech.speak("Dan, can VeDa help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
-                                instructionsDataText.setText("Dan, can VIDA help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket AT234 has been addressed.");
+                                instructionsDataText.setText("Dan, can I help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket AT234 has been addressed.");
                                 scriptLine = 0;
                                 createTroubleJson();
                                 postDataToBrightspot();
@@ -2758,34 +2810,83 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         {
                             toSpeech.speak("Ok", TextToSpeech.QUEUE_FLUSH, null, "End");
                         }
+
+                    }
+                    else
+                    {
+                        toSpeech.speak("I'll take that as a no.", TextToSpeech.QUEUE_FLUSH, null, "End");
                     }
                 break;
 
                 case pingingRecogFor_CleanerTroubleTicket1:
-                    String matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"Water", "Leak", "tiles"});
+                    matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"water", "leak", "broken tiles", "damaged tiles", "cracked tiles"});
                     if(!matchedKeyword.matches(""))
                     {
-                        if(matchedKeyword.matches("Leak") || matchedKeyword.matches("Water"))
+                        if(matchedKeyword.matches("leak") || matchedKeyword.matches("water"))
                         {
                             toSpeech.speak("Sounds like a leak, is the leak in a toilet, a sink, the ceiling or a H vac.", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicket2");
                         }
-                        else if (matchedKeyword.matches("tiles"))
+                        else if (matchedKeyword.matches("broken tiles") || matchedKeyword.matches("damaged tiles") || matchedKeyword.matches("cracked tiles"))
                         {
                             createNewTechnicianClass1Alert(matchedKeyword);
-                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintance. Thank you for your time. Is there anything else Vida can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintance. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                         }
+
+                    }
+                    else
+                    {
+                        UnrecognisedTroubleTicketText = matches.get(0);
+                        toSpeech.speak("That doesn't sound like a problem I recognise, Would you like to register a trouble ticket with the problem. " + matches.get(0) + "?", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicketConfirm");
                     }
                 break;
 
                 case pingingRecogFor_CleanerTroubleTicket2:
-                    if(!sortThroughRecognizerResults(matches, new String[]{"sink", "pipe", "toilet"}).matches(""))
+                    if(!sortThroughRecognizerResults(matches, new String[]{"sink", "h vac", "toilet", "ceiling"}).matches(""))
                     {
-                        createNewTechnicianClass1Alert(sortThroughRecognizerResults(matches, new String[]{"sink", "pipe", "toilet"}));
-                        toSpeech.speak("Registering Trouble ticket, thank you for your time. Is there anything else Vida can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                        createNewTechnicianClass1Alert(sortThroughRecognizerResults(matches, new String[]{"sink", "ceiling", "toilet", "h vac"}));
+                        toSpeech.speak("Registering Trouble ticket, thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                    }
+                    else
+                    {
+                        toSpeech.speak("I'm sorry, I didn't catch that, is the leak coming from a sink. a toilet. the ceiling or . a h vac?", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicket2");
                     }
                 break;
+
+                case pingingRecogFor_TroubleTicketConfirmation:
+                    matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"yes", "ok", "no"});
+                    if(!matchedKeyword.matches(""))
+                    {
+                        if(matchedKeyword.matches("yes") || matchedKeyword.matches("ok"))
+                        {
+                            createNewTechnicianClass1Alert(UnrecognisedTroubleTicketText);
+                            toSpeech.speak("Ok, registering trouble ticket with maintenance. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                        }
+                        else if (matchedKeyword.matches("no"))
+                        {
+                            toSpeech.speak("Understood, I will not create a trouble ticket. Is there anything else Wida can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                        }
+                    }
+                    else
+                    {
+                        toSpeech.speak("I'll take that as a no. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                    }
+                    break;
             }
         }
+    }
+
+
+    private void startRecogListening()
+    {
+        recog = SpeechRecognizer.createSpeechRecognizer(getApplicationContext());
+        recogListener = this;
+        recog.setRecognitionListener(recogListener);
+        recogIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"en");
+        recogIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getApplicationContext().getPackageName());
+        recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+        recogIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        recog.startListening(recogIntent);
     }
 //++++++++[/Recognition Other Code]
 
