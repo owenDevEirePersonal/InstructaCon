@@ -135,6 +135,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private final int pingingRecogFor_Nothing = -1;
 
     private String[] currentPossiblePhrasesNeedingClarification;
+    private boolean clarificationAskToRepeatOnNoMatch;
+    private String lastResponseToClarification;
 
     //[Experimental Recog instantly stopping BugFix Variables]
     private boolean recogIsRunning;
@@ -601,6 +603,18 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         else if (utteranceId.matches("TroubleTicketConfirm"))
                         {
                             pingingRecogFor = pingingRecogFor_TroubleTicketConfirmation;
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    startRecogListening();
+                                }
+                            });
+                        }
+                        else if (utteranceId.matches(textToSpeechID_Clarification))
+                        {
+                            pingingRecogFor = pingingRecogFor_Clarification;
                             runOnUiThread(new Runnable()
                             {
                                 @Override
@@ -2647,6 +2661,11 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
     private void sortThroughRecognizerResultsForAllPossiblities(ArrayList<String> results, String[] matchablePhrases)
     {
+        if(pingingRecogFor != pingingRecogFor_Clarification)
+        {
+            previousPingingRecogFor = pingingRecogFor;
+        }
+
         ArrayList<String> possibleResults = new ArrayList<String>();
         for (String aResult: results)
         {
@@ -2655,6 +2674,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
             {
                 Boolean isDuplicate = false;
                 Log.i("Recog", "All Possiblities, Sorting results for result: " + aResult.toLowerCase().replace("-", " ") + " and Phrase: " + aPhrase.toLowerCase());
+                //if a previous possiblity contained a key phrase, do not search other possiblities for that key phrase.
                 for (String b: possibleResults)
                 {
                     if(b.matches(aPhrase)){isDuplicate = true; break;}
@@ -2698,18 +2718,28 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             {
-                pingingRecogFor = pingingRecogFor_Clarification;
-                recogResultLogic(possibleResults);
+                pingingRecogFor = previousPingingRecogFor;
+                recogResultLogicPostClarification(possibleResults);
                 //toSpeech.speak("h", TextToSpeech.QUEUE_FLUSH, null, textToSpeechID_Clarification);
             }
         }
-        else
+        else if(clarificationAskToRepeatOnNoMatch)//Boolean is set in RecogLogic before calling this method. ask the user to repeat thier answer if there is no match found based on what they answered to the clarification question
         {
             Log.i("Recog", "No matches found, Requesting Repetition .");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             {
+                currentPossiblePhrasesNeedingClarification = matchablePhrases;
                 toSpeech.speak("Can you please repeat that?", TextToSpeech.QUEUE_FLUSH, null, textToSpeechID_Clarification);
             }
+        }
+        else //alternatively, the function simply returns no match(this is to be used by dialog that will record the answer if it does not match any preset keywords, e.g. the trouble ticket dialog)
+        {
+            lastResponseToClarification = results.get(0);
+            Log.i("Recog", "No matches found, Returning empty/previous statement: " + lastResponseToClarification);
+            pingingRecogFor = previousPingingRecogFor;
+            possibleResults = new ArrayList<String>();
+            possibleResults.add(lastResponseToClarification);
+            recogResultLogicPostClarification(possibleResults);
         }
     }
 
@@ -2748,16 +2778,29 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     phrases = currentPossiblePhrasesNeedingClarification;
                     response = sortThroughRecognizerResults(matches, phrases);
                     Log.i("Recog", "onClarification: Response= " + response);
-                    if(response.matches(""))
+                    if(response.matches("") && clarificationAskToRepeatOnNoMatch)
                     {
                         Log.i("Recog", "Unrecongised response: " + response);
                         pingingRecogFor = pingingRecogFor_Clarification;
                         ArrayList<String> copyOfCurrentPossiblePhrases = new ArrayList<String>(Arrays.asList(currentPossiblePhrasesNeedingClarification));
+                        //pinging for Clarification does not set clarificationAskToRepeatOnNoMatch, as it will carry on using whichever the previous value was.
                         sortThroughRecognizerResultsForAllPossiblities(copyOfCurrentPossiblePhrases, phrases);
+                    }
+                    else if(response.matches("") && !clarificationAskToRepeatOnNoMatch)
+                    {
+                        Log.i("Recog", "Unrecognised Response (do not repeat): " + response);
+                        ArrayList<String> clarifiedResponse = new ArrayList<String>();
+                        clarifiedResponse.add(lastResponseToClarification);
+                        pingingRecogFor = previousPingingRecogFor;
+                        recogResultLogic(clarifiedResponse);
                     }
                     else
                     {
                         Log.i("Recog", "Clarification Returned: " + response);
+                        ArrayList<String> clarifiedResponse = new ArrayList<String>();
+                        clarifiedResponse.add(response);
+                        pingingRecogFor = previousPingingRecogFor;
+                        recogResultLogic(clarifiedResponse);
                     }
                     break;
 
@@ -2800,6 +2843,113 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                 break;
 
                 case pingingRecogFor_CleanerCommands:
+                    clarificationAskToRepeatOnNoMatch = false;
+                    sortThroughRecognizerResultsForAllPossiblities(matches, new String[]{"trouble ticket", "no"});
+
+                break;
+
+                case pingingRecogFor_CleanerTroubleTicket1:
+                    clarificationAskToRepeatOnNoMatch = false;
+                    sortThroughRecognizerResultsForAllPossiblities(matches, new String[]{"water", "leak", "broken tiles", "damaged tiles", "cracked tiles"});
+                break;
+
+                case pingingRecogFor_CleanerTroubleTicket2:
+                    clarificationAskToRepeatOnNoMatch = true;
+                    sortThroughRecognizerResultsForAllPossiblities(matches, new String[]{"sink", "h vac", "toilet", "ceiling"});
+                break;
+
+                case pingingRecogFor_TroubleTicketConfirmation:
+                    clarificationAskToRepeatOnNoMatch = false;
+                    sortThroughRecognizerResultsForAllPossiblities(matches, new String[]{"yes", "ok", "no"});
+                    break;
+            }
+        }
+    }
+
+    //Identical to recogResultLogic BUT all calls to sortThroughRecognizerResultsForAllPossibilies replaced with sortThroughRecognizerResults
+    private void recogResultLogicPostClarification(ArrayList<String> matches)
+    {
+        String[] phrases;
+        Log.i("Recog", "Results Post Logic recieved: " + matches);
+        String response = "-Null-";
+        String matchedKeyword = "";
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+            Log.i("Recog", "Pinging For: " + pingingRecogFor);
+            switch (pingingRecogFor)
+            {
+                case pingingRecogFor_Clarification:
+
+                    Log.i("Recog", "onResultPostClarification for Clarification");
+                    phrases = currentPossiblePhrasesNeedingClarification;
+                    response = sortThroughRecognizerResults(matches, phrases);
+                    Log.i("Recog", "onClarification: Response= " + response);
+                    if(response.matches("") && clarificationAskToRepeatOnNoMatch)
+                    {
+                        Log.i("Recog", "Unrecongised response: " + response);
+                        pingingRecogFor = pingingRecogFor_Clarification;
+                        ArrayList<String> copyOfCurrentPossiblePhrases = new ArrayList<String>(Arrays.asList(currentPossiblePhrasesNeedingClarification));
+                        //pinging for Clarification does not set clarificationAskToRepeatOnNoMatch, as it will carry on using whichever the previous value was.
+                        sortThroughRecognizerResultsForAllPossiblities(copyOfCurrentPossiblePhrases, phrases);
+                    }
+                    else if(response.matches("") && !clarificationAskToRepeatOnNoMatch)
+                    {
+                        Log.i("Recog", "Unrecognised Response (do not repeat): " + response);
+                        ArrayList<String> clarifiedResponse = new ArrayList<String>();
+                        clarifiedResponse.add(lastResponseToClarification);
+                        pingingRecogFor = previousPingingRecogFor;
+                        recogResultLogic(clarifiedResponse);
+                    }
+                    else
+                    {
+                        Log.i("Recog", "Clarification Returned: " + response);
+                        ArrayList<String> clarifiedResponse = new ArrayList<String>();
+                        clarifiedResponse.add(response);
+                        pingingRecogFor = previousPingingRecogFor;
+                        recogResultLogic(clarifiedResponse);
+                    }
+                    break;
+
+                case pingingRecogFor_ScriptedExchange:
+
+                    scriptLine++;
+
+                    switch (scriptLine)
+                    {
+                        case 1:
+                            if(!sortThroughRecognizerResults(matches, new String[]{"Water", "Leak", "Leaking"}).matches(""))
+                            {
+                                toSpeech.speak("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing Ceo's bathroom.  . , Does this resolve the issue you have raised, if yes, please say: okay , or ,  not okay after the tone", TextToSpeech.QUEUE_FLUSH, null, "Scripted");
+                                alertDataText.setText("Registering Trouble Ticket");
+                                instructionsDataText.setText("Thank you Dan, our Sodexo team member is on their way to fix the leak in the 2nd floor West Wing Ceo's bathroom. Does this resolve the issue you have raised, if yes, please say okay or not okay after the tone");
+
+                            }
+                            else
+                            {
+                                toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                            }
+                            break;
+                        case 2:
+                            if(!sortThroughRecognizerResults(matches, new String[]{"ok"}).matches(""))
+                            {
+                                toSpeech.speak("Dan, can VeDa help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                instructionsDataText.setText("Dan, can I help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket AT234 has been addressed.");
+                                scriptLine = 0;
+                                createTroubleJson();
+                                postDataToBrightspot();
+
+                                createNewCleanupAlert();
+                            }
+                            else
+                            {
+                                toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                            }
+                            break;
+                    }
+                    break;
+
+                case pingingRecogFor_CleanerCommands:
                     if(!sortThroughRecognizerResults(matches, new String[]{"trouble ticket", "no"}).matches(""))
                     {
                         if(sortThroughRecognizerResults(matches, new String[]{"trouble ticket"}).matches("trouble ticket"))
@@ -2816,7 +2966,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     {
                         toSpeech.speak("I'll take that as a no.", TextToSpeech.QUEUE_FLUSH, null, "End");
                     }
-                break;
+                    break;
 
                 case pingingRecogFor_CleanerTroubleTicket1:
                     matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"water", "leak", "broken tiles", "damaged tiles", "cracked tiles"});
@@ -2838,7 +2988,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         UnrecognisedTroubleTicketText = matches.get(0);
                         toSpeech.speak("That doesn't sound like a problem I recognise, Would you like to register a trouble ticket with the problem. " + matches.get(0) + "?", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicketConfirm");
                     }
-                break;
+                    break;
 
                 case pingingRecogFor_CleanerTroubleTicket2:
                     if(!sortThroughRecognizerResults(matches, new String[]{"sink", "h vac", "toilet", "ceiling"}).matches(""))
@@ -2850,7 +3000,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     {
                         toSpeech.speak("I'm sorry, I didn't catch that, is the leak coming from a sink. a toilet. the ceiling or . a h vac?", TextToSpeech.QUEUE_FLUSH, null, "TroubleTicket2");
                     }
-                break;
+                    break;
 
                 case pingingRecogFor_TroubleTicketConfirmation:
                     matchedKeyword = sortThroughRecognizerResults(matches, new String[]{"yes", "ok", "no"});
