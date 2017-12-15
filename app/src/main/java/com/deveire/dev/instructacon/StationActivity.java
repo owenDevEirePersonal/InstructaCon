@@ -1448,6 +1448,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         Log.i("NewAlert", "" + nameEditText.getText().toString() + " " + alertText + " true " + "Technician Class 1");
         Log.i("NewAlert", "" + allAlerts.get(allAlerts.size() - 1).getStationID() + " " + allAlerts.get(allAlerts.size() - 1).getAlert() + " true " + allAlerts.get(allAlerts.size() - 1).getType());
         saveData();
+        sendEmail(allAlerts.get(allAlerts.size() - 1).getStationID(), allAlerts.get(allAlerts.size() - 1).getAlert());
     }
 
     /*private void createNewTechnicianClass1Alert(String alertType)
@@ -2979,7 +2980,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         else if (matchedKeyword.matches("broken tiles") || matchedKeyword.matches("damaged tiles") || matchedKeyword.matches("cracked tiles"))
                         {
                             createNewTechnicianClass1Alert(matchedKeyword);
-                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintance. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintenance. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                         }
 
                     }
@@ -3040,7 +3041,31 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     }
 //++++++++[/Recognition Other Code]
 
+//++++++++[Emailing Code]
+private void sendEmail(String location, String alert)
+{
+    SimpleDateFormat format = new SimpleDateFormat(" hh:mm  dd/MM/yyyy");
+    Calendar aCalendar = Calendar.getInstance();
 
+    final GMailSender sm = new GMailSender(this, "dan@deveire.com", "New Trouble Ticket", "Trouble Ticket:\n\n\tType: Maintenance \n\n\tLocation: " + location + "\n\n\tAlert: " + alert + "\n\n\tRegistered:" + format.format(aCalendar.getTime()));
+    //GMailSender sm = new GMailSender(this, "dan@deveire.com", "New Trouble Ticket", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    Runnable emailerRunnable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+
+            //Executing sendmail to send email
+            sm.execute();
+        }
+    };
+
+    Thread emailerThread = new Thread(emailerRunnable);
+    emailerThread.start();
+
+
+}
+//++++++++[/Emailing Code]
 
 }
 
