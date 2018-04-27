@@ -6,6 +6,6 @@ package com.deveire.dev.instructacon;
 
 public class EmailConfig
 {
-    public static final String EMAIL ="-email@email.com";
-    public static final String PASSWORD ="-password-";
+    public static final String EMAIL ="placeholder";
+    public static final String PASSWORD ="placeholder";
 }

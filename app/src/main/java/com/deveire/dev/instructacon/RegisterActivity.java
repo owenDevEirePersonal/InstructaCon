@@ -296,7 +296,8 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
 
         for (int i = 0; i < tagsCount; i++)
         {
-            allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
+            allTags.add(new TagsRow(savedData.getString("tags_serialized" + i, "ERROR")));
+            //allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
         }
 
         for (int i = 0; i < signInsCount; i++)
@@ -327,9 +328,10 @@ public class RegisterActivity extends FragmentActivity implements DownloadCallba
 
         for (int i = 0; i < allTags.size(); i++)
         {
-            edit.putString("tags_name" + i, allTags.get(i).getName());
+            edit.putString("tags_serialized" + i, allTags.get(i).serializeTag());
+            /*edit.putString("tags_name" + i, allTags.get(i).getName());
             edit.putString("tags_id" + i, allTags.get(i).getTagID());
-            edit.putString("tags_type" + i, allTags.get(i).getType());
+            edit.putString("tags_type" + i, allTags.get(i).getType());*/
         }
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

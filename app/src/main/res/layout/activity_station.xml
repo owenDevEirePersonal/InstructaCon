@@ -133,5 +133,40 @@
         map:layout_constraintTop_toBottomOf="@+id/nameEditText"
         map:layout_constraintVertical_bias="0.0"
         map:srcCompat="@drawable/rabbit_ad"/>
+
+    <ImageView
+        android:id="@+id/jobFinishedImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:scaleType="fitXY"
+        android:visibility="visible"
+        map:layout_constraintBottom_toTopOf="@+id/jobFinishedButton"
+        map:layout_constraintHorizontal_bias="0.0"
+        map:layout_constraintLeft_toLeftOf="parent"
+        map:layout_constraintRight_toRightOf="parent"
+        map:layout_constraintTop_toBottomOf="@+id/nameEditText"
+        map:srcCompat="@drawable/jobsfinished"/>
+
+    <Button
+        android:id="@+id/jobFinishedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:background="@drawable/rounded_button"
+        android:text="I'm still not done yet"
+        android:textColor="@android:color/white"
+        map:layout_constraintBottom_toBottomOf="parent"
+        map:layout_constraintLeft_toLeftOf="parent"
+        map:layout_constraintRight_toRightOf="parent"
+        map:layout_constraintHorizontal_bias="0.502"
+        />
 </android.support.constraint.ConstraintLayout>
 

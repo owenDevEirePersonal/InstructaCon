@@ -88,6 +88,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private Button pairReaderButton;
     private ImageView adImageView;
     private ImageView inProgressImage;
+    private ImageView jobFinishedImage;
+    private Button jobFinishedButton;
 
     final static int PAIR_READER_REQUESTCODE = 9;
 
@@ -116,7 +118,6 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private HashMap<String, String> endOfSpeakIndentifier;
     private String currentTagName;
     private final String textToSpeechID_Clarification = "Clarification";
-
 
     private int scriptLine;
 
@@ -150,8 +151,6 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
     private Timer adSwapTimer;
     private int currentAdIndex;
 
-    private ArrayList<String> idsOfTypeSecurity;
-    private ArrayList<String> idsOfTypeJanitor;
     private final int ID_TYPE_Janitor = 1;
     private final int ID_TYPE_Security = 2;
     private final int ID_TYPE_Class1_Technician = 3;
@@ -162,6 +161,10 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
     private boolean displayingInProgress;
     private Timer stopInProgressTimer;
+
+    private boolean displayingJobFinished;
+    private Timer stopJobFinishedTimer;
+
 
     //[BLE Variables]
     private String storedScannerAddress;
@@ -518,7 +521,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                                 toSpeech.speak("Can I help you with anything?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                             }
                         }
-                        else if (utteranceId.matches("End") || utteranceId.matches("EndError") || (utteranceId.matches("Instructions End") && currentTagType != ID_TYPE_Janitor))
+                        else if (utteranceId.matches("End") || utteranceId.matches("EndError") || (utteranceId.matches("Instructions End") && !(currentTagType == ID_TYPE_Janitor || currentTagType == ID_TYPE_Class2_Technician)))
                         {
                             displayingInProgress = false;
                             runOnUiThread(new Runnable()
@@ -683,7 +686,6 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
 
         //setupHeadset();
-        setupTypesOfID();
         currentTagType = 0;
 
         //[Offline Setup]
@@ -706,6 +708,17 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         inProgressImage = (ImageView) findViewById(R.id.inProgressImage);
         inProgressImage.setVisibility(View.INVISIBLE);
         stopInProgressTimer = new Timer();
+
+        //[Job Finished correction setup]
+        jobFinishedImage = (ImageView) findViewById(R.id.jobFinishedImage);
+        jobFinishedImage.setImageResource(R.drawable.jobsfinished);
+        jobFinishedImage.setVisibility(View.INVISIBLE);
+
+        jobFinishedButton = (Button) findViewById(R.id.jobFinishedButton);
+        jobFinishedButton.setVisibility(View.INVISIBLE);
+
+        stopJobFinishedTimer = new Timer();
+        //[End of Job Finished correction setup]
 
         restoreSavedValues(savedInstanceState);
 
@@ -773,6 +786,9 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
         stopInProgressTimer.cancel();
         stopInProgressTimer.purge();
+
+        stopJobFinishedTimer.cancel();
+        stopJobFinishedTimer.purge();
 
         //headsetTimer.cancel();
         //headsetTimer.purge();
@@ -862,7 +878,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
         for (int i = 0; i < tagsCount; i++)
         {
-            allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
+            allTags.add(new TagsRow(savedData.getString("tags_serialized" + i, "ERROR")));
+            //allTags.add(new TagsRow(savedData.getString("tags_name" + i, "ERROR"), savedData.getString("tags_id" + i, "ERROR"), savedData.getString("tags_type" + i, "ERROR")));
         }
 
         for (int i = 0; i < signInsCount; i++)
@@ -893,9 +910,10 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
         for (int i = 0; i < allTags.size(); i++)
         {
-            edit.putString("tags_name" + i, allTags.get(i).getName());
+            edit.putString("tags_serialized" + i, allTags.get(i).serializeTag());
+            /*edit.putString("tags_name" + i, allTags.get(i).getName());
             edit.putString("tags_id" + i, allTags.get(i).getTagID());
-            edit.putString("tags_type" + i, allTags.get(i).getType());
+            edit.putString("tags_type" + i, allTags.get(i).getType());*/
         }
 
         DateFormat aformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -914,16 +932,31 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
     private TagsRow findRowFromID(String tagIDin)
     {
-        Log.i("Offline Update", "finding row from ID:" + tagIDin + ", searching " + allTags.size() + "rows.");
+        Log.i("Offline Update", "finding row from ID:" + tagIDin + ", searching " + allTags.size() + " rows.");
         for (TagsRow arow: allTags)
         {
             if(arow.getTagID().matches(tagIDin))
             {
-
                 return arow;
             }
         }
         return null;
+    }
+
+    private void setRowFromID(String tagIDin, TagsRow row)
+    {
+        Log.i("OnTheJob", "setting row from ID:" + tagIDin + ", searching " + allTags.size() + " rows.");
+        for(int i = 0; i < allTags.size(); i++)
+        {
+            Log.i("OnTheJob", "ID:" + allTags.get(i).getTagID() + " " + allTags.get(i).isOnJob() + ", found");
+            if(allTags.get(i).getTagID().matches(tagIDin))
+            {
+                allTags.set(i, row);
+                Log.i("OnTheJob", "ID: " + allTags.get(i).getTagID() + " " + allTags.get(i).isOnJob() + ", changed");
+                return;
+            }
+        }
+        Log.e("OnTheJob", "Tag: " + tagIDin + "not found in setRowFromID");
     }
     //[/Offline loading]
 
@@ -1124,43 +1157,6 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         }
     }*/
 
-    private void setupTypesOfID()
-    {
-        idsOfTypeJanitor = new ArrayList<String>();
-        idsOfTypeSecurity = new ArrayList<String>();
-
-        idsOfTypeJanitor.add("0413b3caa74a81");
-        idsOfTypeJanitor.add("0433bf3aa94a81");
-
-        idsOfTypeSecurity.add("046e226a9a3184");
-    }
-
-    //returns the type of tag in numrical form, given the UID of the tag swiped
-    private int getTypeFromUID(String inUID)
-    {
-        Log.i("setupSpeak", "Getting type of tag scanned");
-        for (String aUID: idsOfTypeJanitor)
-        {
-            if(aUID.matches(inUID))
-            {
-                Log.i("setupSpeak", "Type of Tag = Janitor");
-                return ID_TYPE_Janitor;
-            }
-        }
-
-        for (String aUID: idsOfTypeSecurity)
-        {
-            if(aUID.matches(inUID))
-            {
-                Log.i("setupSpeak", "Type of Tag = Security");
-                return ID_TYPE_Security;
-            }
-        }
-
-        Log.i("setupSpeak", "Type of Tag = Unknown");
-        return 0;
-    }
-
     private void speakAlerts(ArrayList<String> inAlerts)
     {
         speechInText = "";
@@ -1182,6 +1178,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     speechInText += "\n" + aAlert + "\n";
                 }
             }
+
             speakInstructions(currentUID);
         }
     }
@@ -1200,6 +1197,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
     public void speakInstructions(String uidIn)
     {
+        boolean latestTagIsOnTheJob = findRowFromID(uidIn).isOnJob();
+
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
             switch (currentTagType)
@@ -1217,24 +1216,40 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     break;
 
                 case ID_TYPE_Class2_Technician:
-                    speakDailyTechnician2Instructions(uidIn);
+                    if(findRowFromID(uidIn).isOnJob())
+                    {
+                        findRowFromID(uidIn).setOnJob(false);
+                        Log.i("OnTheJob", "Job's Finished");
+                        displayJobFinishedUI(uidIn);
+                    }
+                    else
+                    {
+                        Log.i("OnTheJob", "On the Job");
+                        findRowFromID(uidIn).setOnJob(true);
+                        speakDailyTechnician2Instructions(uidIn);
+                    }
+
                     break;
 
                 default:
                     speakDailyUnknownInstructions(uidIn);
                     break;
             }
-            toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "Instructions End");
-            alertDataText.setText(speechInText.split("Here are your instructions")[0]);
-            Log.i("NewAlerts", speechInText.split("Here are your instructions")[0]);
-            if(speechInText.split("Here are your instructions").length > 1)
+
+            if(!latestTagIsOnTheJob)
             {
-                instructionsDataText.setText("Here are your instructions" + speechInText.split("Here are your instructions")[1]);
-                Log.i("NewAlerts", "Here are your instructions" + speechInText.split("Here are your instructions")[1]);
-            }
-            else
-            {
-                instructionsDataText.setText("");
+                toSpeech.speak("End of Instructions", TextToSpeech.QUEUE_ADD, null, "Instructions End");
+                alertDataText.setText(speechInText.split("Here are your instructions")[0]);
+                Log.i("NewAlerts", speechInText.split("Here are your instructions")[0]);
+                if (speechInText.split("Here are your instructions").length > 1)
+                {
+                    instructionsDataText.setText("Here are your instructions" + speechInText.split("Here are your instructions")[1]);
+                    Log.i("NewAlerts", "Here are your instructions" + speechInText.split("Here are your instructions")[1]);
+                }
+                else
+                {
+                    instructionsDataText.setText("");
+                }
             }
 
             //TODO Fix this splitting text issue
@@ -1404,6 +1419,64 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         }
     }
 
+    private void displayJobFinishedUI(final String uidIn)
+    {
+        jobFinishedButton.setVisibility(View.VISIBLE);
+        jobFinishedImage.setVisibility(View.VISIBLE);
+        instructionsDataText.setVisibility(View.INVISIBLE);
+        alertDataText.setVisibility(View.INVISIBLE);
+        adImageView.setVisibility(View.INVISIBLE);
+
+        jobFinishedButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                findRowFromID(uidIn).setOnJob(true);
+                saveData();
+
+                displayingJobFinished = false;
+                jobFinishedButton.setVisibility(View.INVISIBLE);
+                jobFinishedImage.setVisibility(View.INVISIBLE);
+                instructionsDataText.setVisibility(View.VISIBLE);
+                alertDataText.setVisibility(View.VISIBLE);
+                adImageView.setVisibility(View.VISIBLE);
+                Log.i("OnTheJob", "Resetting onTheJob to true");
+            }
+        });
+
+        stopJobFinishedTimer.cancel();
+        stopJobFinishedTimer.purge();
+        stopJobFinishedTimer = new Timer();
+
+        displayingJobFinished = true;
+        stopJobFinishedTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                if(displayingJobFinished)
+                {
+                    displayingJobFinished = false;
+                    runOnUiThread(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            jobFinishedButton.setVisibility(View.INVISIBLE);
+                            jobFinishedImage.setVisibility(View.INVISIBLE);
+                            alertDataText.setVisibility(View.VISIBLE);
+                            adImageView.setVisibility(View.VISIBLE);
+                            instructionsDataText.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+                }
+            }
+        }, 10000); //after 1 minute, revert to ads.
+
+    }
+
     private String getNameFromUID(String inUID)
     {
         return currentTagName;
@@ -1451,19 +1524,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
         sendEmail(allAlerts.get(allAlerts.size() - 1).getStationID(), allAlerts.get(allAlerts.size() - 1).getAlert());
     }
 
-    /*private void createNewTechnicianClass1Alert(String alertType)
-    {
-        String alertText = "";
-        switch (alertType)
-        {
-            case "": alertText = "Leaking Toilet Cistern"; break;
-        }
 
-        allAlerts.add(new AlertsRow(nameEditText.getText().toString(), alertText, true, "Janitor"));
-        Log.i("NewAlert", "" + nameEditText.getText().toString() + " " + alertText + " true " + "Janitor");
-        Log.i("NewAlert", "" + allAlerts.get(allAlerts.size() - 1).getStationID() + " " + allAlerts.get(allAlerts.size() - 1).getAlert() + " true " + allAlerts.get(allAlerts.size() - 1).getType());
-        saveData();
-    }*/
 
 //---[Headset Code]
 /*
@@ -2822,6 +2883,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             else
                             {
                                 toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                scriptLine = 0;
                             }
                             break;
                         case 2:
@@ -2838,6 +2900,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             else
                             {
                                 toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                scriptLine = 0;
                             }
                             break;
                     }
@@ -2929,6 +2992,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             else
                             {
                                 toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                scriptLine = 0;
                             }
                             break;
                         case 2:
@@ -2945,6 +3009,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                             else
                             {
                                 toSpeech.speak("Unacceptable response, aborting", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                scriptLine = 0;
                             }
                             break;
                     }
