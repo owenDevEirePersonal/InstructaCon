@@ -672,7 +672,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                 });
 
             }
-        }, 0, 20000);
+        }, 0, 6000);
         //++++[/Ad Swapping Setup]
 
 
@@ -711,7 +711,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
 
         //[Job Finished correction setup]
         jobFinishedImage = (ImageView) findViewById(R.id.jobFinishedImage);
-        jobFinishedImage.setImageResource(R.drawable.jobsfinished);
+        jobFinishedImage.setImageResource(R.drawable.jobsfinished2);
         jobFinishedImage.setVisibility(View.INVISIBLE);
 
         jobFinishedButton = (Button) findViewById(R.id.jobFinishedButton);
@@ -2889,8 +2889,8 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         case 2:
                             if(!sortThroughRecognizerResults(matches, new String[]{"ok"}).matches(""))
                             {
-                                toSpeech.speak("Dan, can VeDa help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
-                                instructionsDataText.setText("Dan, can I help you with anything else today and if not, thank you for using our service. You will receive an automated text message when Trouble Ticket AT234 has been addressed.");
+                                toSpeech.speak("Dan, can VeDa help you with anything else today and if not, thank you for using our service. You will receive a voice callback on your phone within 3 minutes asking for further details as well as an automated text message when Trouble Ticket A T 2 3 4 has been addressed.", TextToSpeech.QUEUE_FLUSH, null, "End");
+                                instructionsDataText.setText("Dan, can I help you with anything else today and if not, thank you for using our service. You will receive a voice callback on your phone within 3 minutes asking for further details as well as an automated text message when Trouble Ticket AT234 has been addressed.");
                                 scriptLine = 0;
                                 createTroubleJson();
                                 postDataToBrightspot();
@@ -3045,7 +3045,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         else if (matchedKeyword.matches("broken tiles") || matchedKeyword.matches("damaged tiles") || matchedKeyword.matches("cracked tiles"))
                         {
                             createNewTechnicianClass1Alert(matchedKeyword);
-                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintenance. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                            toSpeech.speak("Sounds like broken tiles, Registering Trouble ticket with maintenance. You will receive an automated voice call-back within the next 3 minutes asking for further details. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                         }
 
                     }
@@ -3060,7 +3060,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                     if(!sortThroughRecognizerResults(matches, new String[]{"sink", "h vac", "toilet", "ceiling"}).matches(""))
                     {
                         createNewTechnicianClass1Alert(sortThroughRecognizerResults(matches, new String[]{"sink", "ceiling", "toilet", "h vac"}));
-                        toSpeech.speak("Registering Trouble ticket, thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                        toSpeech.speak("Registering Trouble ticket. You will receive an automated voice call-back within the next 3 minutes asking for further details. Thank you for your time. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                     }
                     else
                     {
@@ -3075,7 +3075,7 @@ public class StationActivity extends FragmentActivity implements GoogleApiClient
                         if(matchedKeyword.matches("yes") || matchedKeyword.matches("ok"))
                         {
                             createNewTechnicianClass1Alert(UnrecognisedTroubleTicketText);
-                            toSpeech.speak("Ok, registering trouble ticket with maintenance. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
+                            toSpeech.speak("Ok, registering trouble ticket with maintenance. You will receive an automated voice call-back within the next 3 minutes asking for further details. Is there anything else I can help you with?", TextToSpeech.QUEUE_FLUSH, null, "AnythingElse");
                         }
                         else if (matchedKeyword.matches("no"))
                         {
