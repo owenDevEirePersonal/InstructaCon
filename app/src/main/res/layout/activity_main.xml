@@ -48,9 +48,26 @@
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
-        android:text="Debug"
+        android:background="@drawable/rounded_button"
+        android:text="Station 2"
+        android:textColor="@android:color/white"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
-        tools:text="debug"/>
+        tools:text="Station 2"/>
+
+    <Button
+        android:id="@+id/debug2Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rounded_button"
+        android:text="Manager 2"
+        android:textColor="@android:color/white"
+        map:layout_constraintLeft_toLeftOf="parent"
+        map:layout_constraintRight_toRightOf="parent"
+        map:layout_constraintTop_toTopOf="parent"
+        tools:text="Manager 2"/>
 </android.support.constraint.ConstraintLayout>

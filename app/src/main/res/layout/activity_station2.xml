@@ -7,25 +7,11 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <TextView
-        android:id="@+id/mapText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="TextView"
-        android:textColor="@color/cast_expanded_controller_text_color"
-        android:visibility="invisible"
-        map:layout_constraintLeft_toLeftOf="parent"
-        map:layout_constraintTop_toTopOf="parent"/>
-
     <EditText
         android:id="@+id/nameEditText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="133dp"
+        android:layout_height="45dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
@@ -33,10 +19,10 @@
         android:inputType="textPersonName"
         android:text="Name"
         android:textColor="@color/cast_expanded_controller_text_color"
-        map:layout_constraintHorizontal_bias="1.0"
-        map:layout_constraintLeft_toRightOf="@+id/mapText"
         map:layout_constraintRight_toRightOf="parent"
-        map:layout_constraintTop_toTopOf="parent"/>
+        map:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteY="6dp"
+        tools:layout_editor_absoluteX="243dp"/>
 
     <ScrollView
         android:layout_width="0dp"
@@ -44,11 +30,12 @@
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
-        android:layout_marginTop="0dp"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
-        map:layout_constraintTop_toTopOf="@+id/addImageView">
+        map:layout_constraintTop_toTopOf="@+id/addImageView"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -100,7 +87,7 @@
 
     <ImageView
         android:id="@+id/inProgressImage"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
@@ -112,11 +99,13 @@
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toTopOf="@+id/addImageView"
         map:layout_constraintVertical_bias="0.433"
-        map:srcCompat="@drawable/inprogress_ad"/>
+        map:srcCompat="@drawable/inprogress_ad"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"/>
 
     <ImageView
         android:id="@+id/leakInfoImage"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
@@ -128,7 +117,9 @@
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toTopOf="@+id/addImageView"
         map:layout_constraintVertical_bias="0.433"
-        map:srcCompat="@drawable/leak"/>
+        map:srcCompat="@drawable/leak"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"/>
 
     <ImageView
         android:id="@+id/addImageView"
@@ -183,17 +174,41 @@
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintHorizontal_bias="0.502"
-        />
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"/>
 
     <Button
         android:id="@+id/debugButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="82dp"
+        android:layout_height="48dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
         android:text="Debug"
         map:layout_constraintRight_toLeftOf="@+id/nameEditText"
-        map:layout_constraintTop_toTopOf="parent"/>
+        map:layout_constraintTop_toTopOf="parent"
+        android:layout_marginEnd="8dp"
+        tools:layout_editor_absoluteY="8dp"
+        tools:layout_editor_absoluteX="153dp"/>
+
+    <EditText
+        android:id="@+id/debugIDEditText"
+        android:layout_width="0dp"
+        android:layout_height="49dp"
+        android:layout_marginBottom="0dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="0dp"
+        android:ems="10"
+        android:inputType="text"
+        android:text="-Enter Tag ID-"
+        android:textColor="@android:color/white"
+        map:layout_constraintBottom_toBottomOf="@+id/debugButton"
+        map:layout_constraintHorizontal_bias="0.0"
+        map:layout_constraintLeft_toLeftOf="parent"
+        map:layout_constraintRight_toLeftOf="@+id/debugButton"
+        map:layout_constraintTop_toTopOf="@+id/debugButton"
+        map:layout_constraintVertical_bias="0.0"
+        />
 
 </android.support.constraint.ConstraintLayout>
 

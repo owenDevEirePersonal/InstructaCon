@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.deveire.dev.instructacon.remastered.Manager2Activity;
 import com.deveire.dev.instructacon.remastered.Station2Activity;
 
 public class MainActivity extends Activity
@@ -15,6 +16,7 @@ public class MainActivity extends Activity
     private Button managerButton;
 
     private Button debugButton;
+    private Button debug2Button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -26,6 +28,7 @@ public class MainActivity extends Activity
         driverButton = (Button) findViewById(R.id.driverButton);
         managerButton = (Button) findViewById(R.id.managerButton);
         debugButton = (Button) findViewById(R.id.debugButton);
+        debug2Button = (Button) findViewById(R.id.debug2Button);
 
         driverButton.setOnClickListener(new View.OnClickListener()
         {
@@ -51,6 +54,15 @@ public class MainActivity extends Activity
             public void onClick(View v)
             {
                 startActivity(new Intent(getApplicationContext(), Station2Activity.class));
+            }
+        });
+
+        debug2Button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                startActivity(new Intent(getApplicationContext(), Manager2Activity.class));
             }
         });
     }

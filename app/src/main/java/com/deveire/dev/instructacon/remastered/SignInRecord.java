@@ -17,19 +17,27 @@ public class SignInRecord
     String serializedTag;
     Date timestamp;
 
-    public SignInRecord(String stationID, String tagID, String timestamp)
+    public SignInRecord(String stationID, String serializedTag, String timestamp)
     {
         this.stationID = stationID;
-        this.serializedTag = tagID;
+        this.serializedTag = serializedTag;
         setTimestamp(timestamp);
     }
 
-    public SignInRecord(String serializedTag)
+    public SignInRecord(String stationID, String serializedTag, Date timestamp)
     {
-        String trimmedSerializedTag = serializedTag.substring(1, serializedTag.length() -1);
-        for (String aFieldPair: trimmedSerializedTag.split(",,,"))
+        this.stationID = stationID;
+        this.serializedTag = serializedTag;
+        setTimestamp(timestamp);
+    }
+
+    public SignInRecord(String serializedRecord)
+    {
+        String trimmedSerializedTag = serializedRecord.substring(1, serializedRecord.length() -1);
+        for (String aFieldPair: trimmedSerializedTag.split(",,,,,"))
         {
-            String[] aPair = aFieldPair.split(":::");
+            String[] aPair = aFieldPair.split(":::::");
+            Log.i("Tags", "DeSerialized Signin Size: " + aPair.length);
             switch (aPair[0])
             {
                 case "stationID": this.stationID = aPair[1]; break;
@@ -37,7 +45,7 @@ public class SignInRecord
                 case "timestamp": setTimestamp(aPair[1]); break;
             }
         }
-        Log.i("Tags", "DeSerialized TagsRow:" + this.stationID + " " + this.serializedTag + " " + getTimestamp().toString());
+        Log.i("Tags", "DeSerialized SigninRow:" + this.stationID + " " + this.serializedTag + " " + getTimestamp().toString());
     }
 
 
@@ -110,11 +118,11 @@ public class SignInRecord
     public String serializeRecord()
     {
         String serialized = "[";
-        serialized += "stationID:::" + this.getStationID();
-        serialized += ",,,";
-        serialized += "tag:::" + this.getSerializedTag();
-        serialized += ",,,";
-        serialized += "timestamp:::" + this.getTimestampString();
+        serialized += "stationID:::::" + this.getStationID();
+        serialized += ",,,,,";
+        serialized += "tag:::::" + this.getSerializedTag();
+        serialized += ",,,,,";
+        serialized += "timestamp:::::" + this.getTimestampString();
         serialized += "]";
         Log.i("TagsRow", "Serialized as: " + serialized);
         return serialized;

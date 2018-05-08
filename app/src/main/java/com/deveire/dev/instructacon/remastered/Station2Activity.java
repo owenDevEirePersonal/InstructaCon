@@ -3,9 +3,7 @@ package com.deveire.dev.instructacon.remastered;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.media.Image;
 import android.os.Build;
 import android.os.PowerManager;
 import android.speech.RecognitionListener;
@@ -13,7 +11,6 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -22,19 +19,15 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.deveire.dev.instructacon.AlertsRow;
 import com.deveire.dev.instructacon.R;
-import com.deveire.dev.instructacon.SignInsRow;
-import com.deveire.dev.instructacon.TagsRow;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Clarification;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicket1;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicket2;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicketLeak1;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_YesNo;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
@@ -59,7 +52,7 @@ public class Station2Activity extends Activity implements RecognitionListener
     //requiring a restart. This loop will continually kill and restart recog, preventing it from killing itself off.
 
 
-    private TextView mapText;
+    private EditText debugIDEditText;
     private EditText nameEditText;
     private ImageView adImageView;
     private ImageView inProgressImage;
@@ -124,7 +117,6 @@ public class Station2Activity extends Activity implements RecognitionListener
         //setupTileScanner();
 
 
-        mapText = (TextView) findViewById(R.id.mapText);
         nameEditText = (EditText) findViewById(R.id.nameEditText);
 
         adImageView = (ImageView) findViewById(R.id.addImageView);
@@ -204,20 +196,39 @@ public class Station2Activity extends Activity implements RecognitionListener
 
         scriptLine = 0;
 
+        retrieveData();
+        allTags.add(new IDTag("Greg Alderman", "J1", IDTag.tagtype_JANITOR));
+        allTags.add(new IDTag("Janet Dewitt", "S1", IDTag.tagtype_SECURITY));
+        allTags.add(new IDTag("Hugh Mann", "T1", IDTag.tagtype_TECHNICIAN_CLASS_1));
+        allTags.add(new IDTag("Gordon Freeman", "T2", IDTag.tagtype_TECHNICIAN_CLASS_2));
+        saveData();
+
         debugButton = (Button) findViewById(R.id.debugButton);
         debugButton.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)
             {
+                Log.i("Offline check", "debugIDeditText = " + debugIDEditText.getText().toString());
+                //currentTag = findTagFromID(debugIDEditText.getText().toString());
+
                 //handleJanitorSwipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_JANITOR));
-                handleSecuritySwipe(new IDTag("Huw man", "PlaceholderID", IDTag.tagtype_SECURITY));
+                //handleSecuritySwipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_SECURITY));
+                //handleTechnicianClass1Swipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_TECHNICIAN_CLASS_1));
+                //handleTechnicianClass2Swipe(currentTag);
+                swipeActionHandler(debugIDEditText.getText().toString());
             }
         });
 
         leakInfoImage = (ImageView) findViewById(R.id.leakInfoImage);
         leakInfoImage.setImageResource(R.drawable.leak);
         leakInfoImage.setVisibility(View.INVISIBLE);
+
+        debugIDEditText = (EditText) findViewById(R.id.debugIDEditText);
+
+        stopLeakInfoTimer = new Timer();
+        stopInProgressTimer = new Timer();
+        stopJobFinishedTimer = new Timer();
     }
 
     @Override
@@ -272,6 +283,7 @@ public class Station2Activity extends Activity implements RecognitionListener
         stopJobFinishedTimer.cancel();
         stopJobFinishedTimer.purge();
 
+
         stopLeakInfoTimer.cancel();
         stopLeakInfoTimer.purge();
 
@@ -294,6 +306,7 @@ public class Station2Activity extends Activity implements RecognitionListener
     private void retrieveData()
     {
         alertsCount = savedData.getInt("alertsCount", 0);
+        Log.i("Stuff", "Count = " + alertsCount);
         tagsCount = savedData.getInt("tagsCount", 0);
         signInsCount = savedData.getInt("signInsCount", 0);
         allAlerts = new ArrayList<AlertData>();
@@ -319,6 +332,18 @@ public class Station2Activity extends Activity implements RecognitionListener
     private void saveData()
     {
         Log.i("Saving", "Saving Data in saveData()");
+
+        int j = 0;
+        for (IDTag aTag: allTags)
+        {
+            if(aTag.getTagID().matches(currentTag.getTagID()))
+            {
+                allTags.set(j, currentTag);
+                break;
+            }
+            j++;
+        }
+
         SharedPreferences.Editor edit = savedData.edit();
         alertsCount = allAlerts.size();
         tagsCount = allTags.size();
@@ -348,7 +373,7 @@ public class Station2Activity extends Activity implements RecognitionListener
         Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
     }
 
-    private IDTag findRowFromID(String tagIDin)
+    private IDTag findTagFromID(String tagIDin)
     {
         Log.i("Offline Update", "finding row from ID:" + tagIDin + ", searching " + allTags.size() + " rows.");
         for (IDTag arow: allTags)
@@ -400,14 +425,18 @@ public class Station2Activity extends Activity implements RecognitionListener
         retrieveData();
 
 
-        IDTag tag = findRowFromID(tagIDin);
+        IDTag tag = findTagFromID(tagIDin);
         currentTag = tag;
+        Calendar aCal = Calendar.getInstance();
+        allSignIns.add(new SignInRecord(currentStationID, currentTag.serializeTag(), aCal.getTime()));
+        saveData();
+
         switch (tag.getType())
         {
             case IDTag.tagtype_JANITOR: handleJanitorSwipe(tag); break;
             case IDTag.tagtype_SECURITY: handleSecuritySwipe(tag); break;
-            /*case IDTag.tagtype_TECHNICIAN_CLASS_1: handleTechnicianClass1Swipe(tag); break;
-            case IDTag.tagtype_TECHNICIAN_CLASS_2: handleTechnicianClass2Swipe(tag); break;*/
+            case IDTag.tagtype_TECHNICIAN_CLASS_1: handleTechnicianClass1Swipe(tag); break;
+            case IDTag.tagtype_TECHNICIAN_CLASS_2: handleTechnicianClass2Swipe(tag); break;
             default: Log.e("Swipe", "ERROR: UNIDENTIFIED CARD TYPE"); break;
         }
     }
@@ -419,8 +448,7 @@ public class Station2Activity extends Activity implements RecognitionListener
             displayingInProgress = false;
             stopInProgressTimer.cancel();
             stopInProgressTimer.purge();
-            inProgressImage.setVisibility(View.INVISIBLE);
-            adImageView.setVisibility(View.VISIBLE);
+            displayAdImage();
         }
         else
         {
@@ -439,6 +467,29 @@ public class Station2Activity extends Activity implements RecognitionListener
 
     }
 
+    private void handleTechnicianClass1Swipe(IDTag tag)
+    {
+        adImageView.setVisibility(View.INVISIBLE);
+        speakAlerts(tag);
+        speakTechnicianClass1Instructions(tag);
+    }
+
+    private void handleTechnicianClass2Swipe(IDTag tag)
+    {
+        adImageView.setVisibility(View.INVISIBLE);
+        if(!tag.isOnJob())
+        {
+            currentTag.setIsOnJob(true);
+            saveData();
+            speakAlerts(tag);
+            speakTechnicianClass2Instructions(tag);
+        }
+        else
+        {
+            displayJobFinishedImage();
+        }
+    }
+
     private void speakJanitorInstructions(IDTag tag)
     {
         String alertSpeechString = "Here are your instructions, Cleaner " + tag.getName() + ". . ";
@@ -453,7 +504,7 @@ public class Station2Activity extends Activity implements RecognitionListener
         alertSpeechString += " End of Instructions. . ";
 
         instructionsDataText.setText(alertTextString);
-        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_FLUSH, null, "EndOfJanitorInstructions");
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfJanitorInstructions");
     }
 
     private void speakSecurityInstructions(IDTag tag)
@@ -470,9 +521,36 @@ public class Station2Activity extends Activity implements RecognitionListener
         alertSpeechString += " End of Instructions. . ";
 
         instructionsDataText.setText(alertTextString);
-        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_FLUSH, null, "EndOfSecurityInstructions");
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfSecurityInstructions");
     }
 
+    private void speakTechnicianClass1Instructions(IDTag tag)
+    {
+        String alertSpeechString = "You are not Authorised to work on this device, Technician " + tag.getName() + ". . ";
+        String alertTextString = "\nYou are not Authorised to work on this device, Technician " + tag.getName() + ":\n--------------------------------------------------------\n";
+
+        alertSpeechString += " End of Instructions. . ";
+
+        instructionsDataText.setText(alertTextString);
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfTechnicianClass1Instructions");
+    }
+
+    private void speakTechnicianClass2Instructions(IDTag tag)
+    {
+        String alertSpeechString = "Here are your instructions, Technician " + tag.getName() + ". . ";
+        String alertTextString = "\nHere are your instructions, Technician " + tag.getName() + ":\n--------------------------------------------------------\n";
+        alertSpeechString += " 1. Remove the panel." + " . ";
+        alertTextString += "\n1. Remove the panel.\n";
+        alertSpeechString += " 2. Change the air pipe." + " . ";
+        alertTextString += "\n2. Change the air pipe.\n";
+        alertSpeechString += " 3. Replace the panel." + " . ";
+        alertTextString += "\n3. Replace the panel.\n";
+
+        alertSpeechString += " End of Instructions. . ";
+
+        instructionsDataText.setText(alertTextString);
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfTechnicianClass2Instructions");
+    }
 
 
 //+++++++++++++++++++++++++++++++Voice Interface Code+++++++++++++++++++++++++++++++
@@ -553,6 +631,18 @@ public class Station2Activity extends Activity implements RecognitionListener
                                     startRecogListening(new PingingFor_JanitorTroubleTicketLeak1());
                                 }
                             });
+                        }
+                        else if(utteranceId.matches("EndOfSecurityInstructions"))
+                        {
+                            displayAdImage();
+                        }
+                        else if(utteranceId.matches("EndOfTechnicianClass1Instructions"))
+                        {
+                            displayAdImage();
+                        }
+                        else if(utteranceId.matches("EndOfTechnicianClass2Instructions"))
+                        {
+                            displayInProgressImage();
                         }
                         else
                         {
@@ -941,31 +1031,7 @@ public class Station2Activity extends Activity implements RecognitionListener
             @Override
             public void run()
             {
-                inProgressImage.setVisibility(View.VISIBLE);
-                displayingInProgress = true;
-                stopInProgressTimer = new Timer();
-                stopInProgressTimer.schedule(new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        if (displayingInProgress)
-                        {
-                            displayingInProgress = false;
-                            runOnUiThread(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    inProgressImage.setVisibility(View.INVISIBLE);
-                                    adImageView.setVisibility(View.VISIBLE);
-                                }
-                            });
-
-                        }
-                    }
-                }, 60000); //after 1 minute, revert to ads.
-
+                displayInProgressImage();
                 startRecogListening(new PingingFor_JanitorTroubleTicket1());
             }
         });
@@ -1055,4 +1121,83 @@ public class Station2Activity extends Activity implements RecognitionListener
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++End of Voice Interface Code+++++++++++++++++++++++++++++
 
+
+    //[Misc Methods]
+    private void displayAdImage()
+    {
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                inProgressImage.setVisibility(View.INVISIBLE);
+                jobFinishedImage.setVisibility(View.INVISIBLE);
+                jobFinishedButton.setVisibility(View.INVISIBLE);
+                adImageView.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void displayInProgressImage()
+    {
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                adImageView.setVisibility(View.INVISIBLE);
+                jobFinishedImage.setVisibility(View.INVISIBLE);
+                jobFinishedButton.setVisibility(View.INVISIBLE);
+                inProgressImage.setVisibility(View.VISIBLE);
+            }
+        });
+        displayingInProgress = true;
+        stopInProgressTimer = new Timer();
+        stopInProgressTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                if (displayingInProgress)
+                {
+                    displayingInProgress = false;
+                    displayAdImage();
+                }
+            }
+        }, 60000); //after 1 minute, revert to ads.
+    }
+
+    private void displayJobFinishedImage()
+    {
+        adImageView.setVisibility(View.INVISIBLE);
+        jobFinishedImage.setVisibility(View.VISIBLE);
+        jobFinishedButton.setVisibility(View.VISIBLE);
+        jobFinishedButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                displayingJobFinished = false;
+                displayAdImage();
+            }
+        });
+        inProgressImage.setVisibility(View.INVISIBLE);
+        displayingJobFinished = true;
+        stopJobFinishedTimer = new Timer();
+        stopJobFinishedTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                if (displayingJobFinished)
+                {
+                    displayingJobFinished = false;
+                    displayAdImage();
+                    currentTag.setIsOnJob(false);
+                    saveData();
+                }
+            }
+        }, 30000); //after 1 minute, revert to ads.
+    }
+    //[End of Misc Methods]
 }
