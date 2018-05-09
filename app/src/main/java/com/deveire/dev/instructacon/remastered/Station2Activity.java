@@ -197,10 +197,6 @@ public class Station2Activity extends Activity implements RecognitionListener
         scriptLine = 0;
 
         retrieveData();
-        allTags.add(new IDTag("Greg Alderman", "J1", IDTag.tagtype_JANITOR));
-        allTags.add(new IDTag("Janet Dewitt", "S1", IDTag.tagtype_SECURITY));
-        allTags.add(new IDTag("Hugh Mann", "T1", IDTag.tagtype_TECHNICIAN_CLASS_1));
-        allTags.add(new IDTag("Gordon Freeman", "T2", IDTag.tagtype_TECHNICIAN_CLASS_2));
         saveData();
 
         debugButton = (Button) findViewById(R.id.debugButton);
@@ -306,9 +302,9 @@ public class Station2Activity extends Activity implements RecognitionListener
     private void retrieveData()
     {
         alertsCount = savedData.getInt("alertsCount", 0);
-        Log.i("Stuff", "Count = " + alertsCount);
         tagsCount = savedData.getInt("tagsCount", 0);
         signInsCount = savedData.getInt("signInsCount", 0);
+        Log.i("Offline", "Total number of alerts: " + alertsCount + " tags: " + tagsCount + " signins: " + signInsCount);
         allAlerts = new ArrayList<AlertData>();
         allTags = new ArrayList<IDTag>();
         allSignIns = new ArrayList<SignInRecord>();
@@ -426,17 +422,24 @@ public class Station2Activity extends Activity implements RecognitionListener
 
 
         IDTag tag = findTagFromID(tagIDin);
-        currentTag = tag;
+        if(tag != null)
+        {
+            currentTag = tag;
+        }
+        else
+        {
+            currentTag = new IDTag("Unknown Card with ID: " + tagIDin, tagIDin, IDTag.tagtype_UNDEFINED_TAG);
+        }
         Calendar aCal = Calendar.getInstance();
         allSignIns.add(new SignInRecord(currentStationID, currentTag.serializeTag(), aCal.getTime()));
         saveData();
 
-        switch (tag.getType())
+        switch (currentTag.getType())
         {
-            case IDTag.tagtype_JANITOR: handleJanitorSwipe(tag); break;
-            case IDTag.tagtype_SECURITY: handleSecuritySwipe(tag); break;
-            case IDTag.tagtype_TECHNICIAN_CLASS_1: handleTechnicianClass1Swipe(tag); break;
-            case IDTag.tagtype_TECHNICIAN_CLASS_2: handleTechnicianClass2Swipe(tag); break;
+            case IDTag.tagtype_JANITOR: handleJanitorSwipe(currentTag); break;
+            case IDTag.tagtype_SECURITY: handleSecuritySwipe(currentTag); break;
+            case IDTag.tagtype_TECHNICIAN_CLASS_1: handleTechnicianClass1Swipe(currentTag); break;
+            case IDTag.tagtype_TECHNICIAN_CLASS_2: handleTechnicianClass2Swipe(currentTag); break;
             default: Log.e("Swipe", "ERROR: UNIDENTIFIED CARD TYPE"); break;
         }
     }

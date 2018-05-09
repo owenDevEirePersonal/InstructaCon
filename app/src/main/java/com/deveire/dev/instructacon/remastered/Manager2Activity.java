@@ -118,7 +118,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_manager);
+        setContentView(R.layout.activity_manager2);
 
 
 
@@ -141,7 +141,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             {
                 if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
                 {
-                    uploadSecurityAlert();
+                    uploadAlert(IDTag.tagtype_SECURITY);
                     stationIDText.setText("");
                     alertTextText.setText("");
                 }
@@ -155,7 +155,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             {
                 if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
                 {
-                    uploadCleanupAlert();
+                    uploadAlert(IDTag.tagtype_JANITOR);
                     stationIDText.setText("");
                     alertTextText.setText("");
                 }
@@ -169,7 +169,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             {
                 if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
                 {
-                    uploadTechnicianClass1Alert();
+                    uploadAlert(IDTag.tagtype_TECHNICIAN_CLASS_1);
                     stationIDText.setText("");
                     alertTextText.setText("");
                 }
@@ -183,7 +183,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             {
                 if(!stationIDText.getText().toString().matches("") && !alertTextText.getText().toString().matches(""))
                 {
-                    uploadTechnicianClass2Alert();
+                    uploadAlert(IDTag.tagtype_TECHNICIAN_CLASS_2);
                     stationIDText.setText("");
                     alertTextText.setText("");
                 }
@@ -195,7 +195,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             @Override
             public void onClick(View v)
             {
-                startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
+                startActivity(new Intent(getApplicationContext(), Register2Activity.class));
             }
         });
 
@@ -256,7 +256,6 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
                 String filter = s.toString();
                 Log.i("filterWatcher", filter);
                 filterSignins(filter);
-
             }
         };
 
@@ -275,7 +274,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
             {
                 retrieveSignins();
             }
-        }, 5000);
+        }, 1000);
 
         pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "Manager_Activity_instructacon tag");
@@ -331,6 +330,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
         alertsCount = savedData.getInt("alertsCount", 0);
         tagsCount = savedData.getInt("tagsCount", 0);
         signInsCount = savedData.getInt("signInsCount", 0);
+        Log.i("Offline", "Total number of Alerts: " + alertsCount + " Tags: " + tagsCount + " SigninsCount: " + signInsCount);
         allAlerts = new ArrayList<AlertData>();
         allTags = new ArrayList<IDTag>();
         allSignInRows = new ArrayList<SignInRecord>();
@@ -400,37 +400,17 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
     }
     //[/Offline loading]\
 
-    private void uploadCleanupAlert()
+    private void uploadAlert(String alertType)
     {
         retrieveData();
-        allAlerts.add(new AlertData(stationIDText.getText().toString(), alertTextText.getText().toString(), true, IDTag.tagtype_JANITOR));
-        saveData();
-    }
-
-    private void uploadSecurityAlert()
-    {
-        retrieveData();
-        allAlerts.add(new AlertData(stationIDText.getText().toString(), alertTextText.getText().toString(), true, IDTag.tagtype_SECURITY));
-        saveData();
-    }
-
-    private void uploadTechnicianClass1Alert()
-    {
-        retrieveData();
-        allAlerts.add(new AlertData(stationIDText.getText().toString(), alertTextText.getText().toString(), true, IDTag.tagtype_TECHNICIAN_CLASS_1));
-        saveData();
-    }
-
-    private void uploadTechnicianClass2Alert()
-    {
-        retrieveData();
-        allAlerts.add(new AlertData(stationIDText.getText().toString(), alertTextText.getText().toString(), true, IDTag.tagtype_TECHNICIAN_CLASS_2));
+        allAlerts.add(new AlertData(stationIDText.getText().toString(), alertTextText.getText().toString(), true, alertType));
         saveData();
     }
 
     private void retrieveSignins()
     {
         retrieveData();
+        Log.i("Signins", " starting retrieveSignins");
 
         runOnUiThread(new Runnable()
         {
@@ -444,10 +424,10 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
         fullSignIn = new SpannedString("");
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        //for (IDTag arow: allTags)
-        //{
+        for (IDTag arow: allTags)
+        {
             current3LatestSignins = new ArrayList<SignInRecord>();
-            /*for (SignInRecord brow : allSignInRows)
+            for (SignInRecord brow : allSignInRows)
             {
                 if(arow.getTagID().matches(brow.getTagID()))
                 {
@@ -461,13 +441,12 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
                     }
                 }
             }
-            current3LatestSignins = allSignInRows;
             int i = 0;
             for (SignInRecord crow: current3LatestSignins)
             {
                 String aSignin;
                 aSignin = findRowFromID(crow.getTagID()).getType() + " " + findRowFromID(crow.getTagID()).getName() + " signed in at " + crow.getStationID() + " at " + format.format(crow.getTimestamp());
-                Log.i("Signin", "" + aSignin);
+                Log.i("Signin", " aSignin is: " + aSignin);
 
 
                 SpannableString bSignin = new SpannableString("");
@@ -527,28 +506,28 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
 
 
                 i++;
-            }*/
-
-
-            //for all non registered tags
-            String aSignin;
-            for (SignInRecord aRow: allSignInRows)
-            {
-                /*if (findRowFromID(aRow.getTagID()) == null)
-                {*/
-                    //if signin does not match any registered tag
-                    //aSignin = "Other ID " + aRow.getTagID() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
-                    aSignin = new IDTag(aRow.getSerializedTag()).getType() + " " + aRow.getTagName() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
-                    Log.i("Signin", "" + aSignin);
-                    SpannableString bSignin = new SpannableString("");
-                    bSignin = new SpannableString(aSignin + "\n" + "\n");
-
-                    allSignins.add(aSignin);
-                    fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
-                //}
             }
 
-        //}
+        }
+
+        //for all non registered tags
+        String aSignin;
+        Log.i("Signins", "Starting Non registered tag signin");
+        for (SignInRecord aRow: allSignInRows)
+        {
+            if (findRowFromID(aRow.getTagID()) == null)
+            {
+                //if signin does not match any registered tag
+                //aSignin = "Other ID " + aRow.getTagID() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
+                aSignin = (new IDTag(aRow.getSerializedTag())).getType() + " " + aRow.getTagName() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
+                Log.i("Signins", "Non registered tag signin: " + aSignin);
+                SpannableString bSignin = new SpannableString("");
+                bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                allSignins.add(aSignin);
+                fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
+            }
+        }
 
         runOnUiThread(new Runnable()
         {
@@ -612,6 +591,7 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
 
     private void filterSignins(String inFilter)
     {
+        Log.i("Signins", " starting filterSignins");
         /*TODO: redo signins text so that all entires are stored a strings in an arraylist, then redo this method to work off that list, rather than recompiling the
           entire list off of all the Arraylists of rows.*/
         allSignins = new ArrayList<String>();
@@ -620,11 +600,15 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
 
 
         ArrayList<SignInRecord> allMatchingRows = new ArrayList<SignInRecord>();
-        for (SignInRecord arow: allSignInRows)
+        for (SignInRecord aSignin: allSignInRows)
         {
-            if(findRowFromID(arow.getTagID()).getName().contains(inFilter))
+            /*if(findRowFromID(aSignin.getTagID()).getName().contains(inFilter))
             {
-                allMatchingRows.add(arow);
+                allMatchingRows.add(aSignin);
+            }*/
+            if(aSignin.getTagName().contains(inFilter))
+            {
+                allMatchingRows.add(aSignin);
             }
         }
 
@@ -702,6 +686,25 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
 
         }
 
+        //for all non registered tags
+        String aSignin;
+        Log.i("Signins", "Starting Non registered tag signin");
+        for (SignInRecord aRow: allSignInRows)
+        {
+            if (findRowFromID(aRow.getTagID()) == null)
+            {
+                //if signin does not match any registered tag
+                //aSignin = "Other ID " + aRow.getTagID() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
+                aSignin = (new IDTag(aRow.getSerializedTag())).getType() + " " + aRow.getTagName() + " signed in at " + aRow.getStationID() + " at " + format.format(aRow.getTimestamp());
+                Log.i("Signins", "Non registered tag signin: " + aSignin);
+                SpannableString bSignin = new SpannableString("");
+                bSignin = new SpannableString(aSignin + "\n" + "\n");
+
+                allSignins.add(aSignin);
+                fullSignIn = (SpannedString) TextUtils.concat(fullSignIn, bSignin);
+            }
+        }
+
         runOnUiThread(new Runnable()
         {
             @Override
@@ -710,8 +713,6 @@ public class Manager2Activity extends FragmentActivity implements DownloadCallba
                 signinText.setText(fullSignIn);
             }
         });
-
-
     }
 
 

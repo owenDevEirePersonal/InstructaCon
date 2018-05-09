@@ -21,8 +21,8 @@
         android:textColor="@color/cast_expanded_controller_text_color"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toTopOf="parent"
-        map:layout_constraintLeft_toRightOf="@+id/debugButton"
-        android:layout_marginLeft="8dp"/>
+        tools:layout_editor_absoluteY="6dp"
+        tools:layout_editor_absoluteX="243dp"/>
 
     <ScrollView
         android:layout_width="0dp"
@@ -182,15 +182,15 @@
         android:layout_width="82dp"
         android:layout_height="48dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
         android:background="@drawable/rounded_button"
         android:text="Scan"
         android:textColor="@android:color/white"
+        map:layout_constraintRight_toLeftOf="@+id/nameEditText"
         map:layout_constraintTop_toTopOf="parent"
-        android:layout_marginRight="8dp"
-        map:layout_constraintRight_toRightOf="parent"
-        android:layout_marginLeft="8dp"
-        map:layout_constraintLeft_toLeftOf="parent"/>
+        tools:layout_editor_absoluteX="153dp"
+        tools:layout_editor_absoluteY="8dp"/>
 
     <EditText
         android:id="@+id/debugIDEditText"

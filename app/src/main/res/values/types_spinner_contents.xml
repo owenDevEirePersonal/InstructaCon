@@ -3,7 +3,7 @@
     <string-array name="roles_array">
         <item>Janitor</item>
         <item>Security Guard</item>
-        <item>Techician Class 1</item>
-        <item>Techician Class 2</item>
+        <item>Technician Class 1</item>
+        <item>Technician Class 2</item>
     </string-array>
 </resources>

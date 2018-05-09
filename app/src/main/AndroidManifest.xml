@@ -64,6 +64,8 @@
         </activity>
         <activity android:name=".remastered.Manager2Activity">
         </activity>
+        <activity android:name=".remastered.Register2Activity">
+        </activity>
     </application>
 
 </manifest>
