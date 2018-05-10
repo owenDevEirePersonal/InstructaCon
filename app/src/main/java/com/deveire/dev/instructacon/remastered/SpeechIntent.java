@@ -107,4 +107,8 @@ public abstract class SpeechIntent
     {
         this.speechPrompt = speechPrompt;
     }
+
+
+    //TODO: Implement checking for a collection of symohns across the sentacne
+    //TODO: i.e. if "cracked" and "tiles" appears in "The tiles are cracked" return true
 }

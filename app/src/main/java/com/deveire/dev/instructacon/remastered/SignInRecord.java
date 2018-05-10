@@ -33,11 +33,12 @@ public class SignInRecord
 
     public SignInRecord(String serializedRecord)
     {
+        Log.i("Tags", "DeSerializing Signin: " + serializedRecord);
         String trimmedSerializedTag = serializedRecord.substring(1, serializedRecord.length() -1);
         for (String aFieldPair: trimmedSerializedTag.split(",,,,,"))
         {
             String[] aPair = aFieldPair.split(":::::");
-            Log.i("Tags", "DeSerialized Signin Size: " + aPair.length);
+            Log.i("Tags", "DeSerialized Signin Pair Size: " + aPair.length);
             switch (aPair[0])
             {
                 case "stationID": this.stationID = aPair[1]; break;

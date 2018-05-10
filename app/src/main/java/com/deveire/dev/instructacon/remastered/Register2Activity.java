@@ -36,6 +36,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Timer;
 
+import static com.deveire.dev.instructacon.remastered.Utils.retrieveTags;
+import static com.deveire.dev.instructacon.remastered.Utils.saveTagData;
+
 public class Register2Activity extends FragmentActivity
 {
     private Button registerButton;
@@ -160,85 +163,10 @@ public class Register2Activity extends FragmentActivity
         super.onStop();
     }
 
-    //[Offline loading]
-    private void retrieveData()
-    {
-        alertsCount = savedData.getInt("alertsCount", 0);
-        tagsCount = savedData.getInt("tagsCount", 0);
-        signInsCount = savedData.getInt("signInsCount", 0);
-        Log.i("Offline", "Total number of Alerts: " + alertsCount + " Tags: " + tagsCount + " SigninsCount: " + signInsCount);
-        allAlerts = new ArrayList<AlertData>();
-        allTags = new ArrayList<IDTag>();
-        allSignIns = new ArrayList<SignInRecord>();
-
-        for (int i = 0; i < alertsCount; i++)
-        {
-            allAlerts.add(new AlertData(savedData.getString("alerts" + i, "ERROR")));
-        }
-
-        for (int i = 0; i < tagsCount; i++)
-        {
-            allTags.add(new IDTag(savedData.getString("tags" + i, "ERROR")));
-        }
-
-        for (int i = 0; i < signInsCount; i++)
-        {
-            allSignIns.add(new SignInRecord(savedData.getString("signIns" + i, "ERROR")));
-            Log.i("Signins", savedData.getString("signIns" + i, "ERROR"));
-        }
-    }
-
-    private void saveData()
-    {
-        SharedPreferences.Editor edit = savedData.edit();
-        alertsCount = allAlerts.size();
-        Log.i("Stuff", "Count = " + alertsCount);
-        tagsCount = allTags.size();
-        signInsCount = allSignIns.size();
-        edit.putInt("alertsCount", alertsCount);
-        edit.putInt("tagsCount", tagsCount);
-        edit.putInt("signInsCount", signInsCount);
-
-
-        for (int i = 0; i < allAlerts.size(); i++)
-        {
-            edit.putString("alerts" + i, allAlerts.get(i).serialize());
-
-        }
-
-        for (int i = 0; i < allTags.size(); i++)
-        {
-            edit.putString("tags" + i, allTags.get(i).serializeTag());
-
-        }
-
-        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        for (int i = 0; i < allSignIns.size(); i++)
-        {
-            edit.putString("signIns" + i, allSignIns.get(i).serializeRecord());
-        }
-
-        edit.commit();
-        Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
-        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
-    }
-
-    private IDTag findRowFromID(String tagIDin)
-    {
-        for (IDTag arow: allTags)
-        {
-            if(arow.getTagID().matches(tagIDin))
-            {
-                return arow;
-            }
-        }
-        return null;
-    }
-    //[/Offline loading]\
 
     private void uploadEmployeeData(String namein, String tagIDin, String typeIn)
     {
-        retrieveData();
+        allTags = retrieveTags(savedData);
         if(!namein.matches("") && !tagIDin.matches("-Please Enter Tag-"))
         {
             boolean matchFound = false;
@@ -258,7 +186,7 @@ public class Register2Activity extends FragmentActivity
                 allTags.add(new IDTag(namein, tagIDin, getTypeFromSpinner(typeIn)));
                 Log.i("Network Update", "Adding new tag, with " + namein + ", " + tagIDin + ", " + typeIn);
             }
-            saveData();
+            saveTagData(savedData, allTags);
             finish();
         }
         else

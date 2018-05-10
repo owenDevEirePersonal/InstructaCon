@@ -15,8 +15,8 @@ public class MainActivity extends Activity
     private Button driverButton;
     private Button managerButton;
 
-    private Button debugButton;
-    private Button debug2Button;
+    private Button driver2Button;
+    private Button manager2Button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -27,8 +27,8 @@ public class MainActivity extends Activity
 
         driverButton = (Button) findViewById(R.id.driverButton);
         managerButton = (Button) findViewById(R.id.managerButton);
-        debugButton = (Button) findViewById(R.id.debugButton);
-        debug2Button = (Button) findViewById(R.id.debug2Button);
+        driver2Button = (Button) findViewById(R.id.driver2Button);
+        manager2Button = (Button) findViewById(R.id.manager2Button);
 
         driverButton.setOnClickListener(new View.OnClickListener()
         {
@@ -48,7 +48,7 @@ public class MainActivity extends Activity
             }
         });
 
-        debugButton.setOnClickListener(new View.OnClickListener()
+        driver2Button.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)
@@ -57,7 +57,7 @@ public class MainActivity extends Activity
             }
         });
 
-        debug2Button.setOnClickListener(new View.OnClickListener()
+        manager2Button.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)

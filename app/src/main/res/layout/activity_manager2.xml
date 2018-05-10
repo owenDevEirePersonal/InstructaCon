@@ -249,7 +249,7 @@
                     android:id="@+id/filterEditText"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="0dp"
                     android:layout_marginLeft="64dp"
                     android:layout_marginRight="8dp"
                     android:layout_marginTop="0dp"

@@ -9,15 +9,15 @@
 
 
     <Button
-        android:id="@+id/managerButton"
+        android:id="@+id/manager2Button"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
-        android:text="Manager"
         android:background="@drawable/rounded_button"
+        android:text="Manager"
         android:textColor="@color/cast_expanded_controller_text_color"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintHorizontal_bias="1.0"
@@ -27,14 +27,14 @@
         map:layout_constraintVertical_bias="0.523"/>
 
     <Button
-        android:id="@+id/driverButton"
+        android:id="@+id/driver2Button"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="8dp"
-        android:text="Station"
         android:background="@drawable/rounded_button"
+        android:text="Station"
         android:textColor="@color/cast_expanded_controller_text_color"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintLeft_toLeftOf="parent"
@@ -42,32 +42,32 @@
         map:layout_constraintVertical_bias="0.0"/>
 
     <Button
-        android:id="@+id/debugButton"
+        android:id="@+id/driverButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:background="@drawable/rounded_button"
-        android:text="Station 2"
+        android:text="Old Station"
         android:textColor="@android:color/white"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
-        tools:text="Station 2"/>
+        tools:text="Old Station"/>
 
     <Button
-        android:id="@+id/debug2Button"
+        android:id="@+id/managerButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
         android:background="@drawable/rounded_button"
-        android:text="Manager 2"
+        android:text="Old Manager"
         android:textColor="@android:color/white"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toTopOf="parent"
-        tools:text="Manager 2"/>
+        tools:text="Old Manager"/>
 </android.support.constraint.ConstraintLayout>

@@ -33,6 +33,11 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.deveire.dev.instructacon.remastered.Utils.findTagFromID;
+import static com.deveire.dev.instructacon.remastered.Utils.retrieveAlerts;
+import static com.deveire.dev.instructacon.remastered.Utils.retrieveSignIns;
+import static com.deveire.dev.instructacon.remastered.Utils.retrieveTags;
+
 public class Station2Activity extends Activity implements RecognitionListener
 {
     private Button debugButton;
@@ -197,9 +202,8 @@ public class Station2Activity extends Activity implements RecognitionListener
         scriptLine = 0;
 
         retrieveData();
-        saveData();
 
-        debugButton = (Button) findViewById(R.id.debugButton);
+        debugButton = (Button) findViewById(R.id.driver2Button);
         debugButton.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -301,28 +305,9 @@ public class Station2Activity extends Activity implements RecognitionListener
     //[Offline loading]
     private void retrieveData()
     {
-        alertsCount = savedData.getInt("alertsCount", 0);
-        tagsCount = savedData.getInt("tagsCount", 0);
-        signInsCount = savedData.getInt("signInsCount", 0);
-        Log.i("Offline", "Total number of alerts: " + alertsCount + " tags: " + tagsCount + " signins: " + signInsCount);
-        allAlerts = new ArrayList<AlertData>();
-        allTags = new ArrayList<IDTag>();
-        allSignIns = new ArrayList<SignInRecord>();
-
-        for (int i = 0; i < alertsCount; i++)
-        {
-            allAlerts.add(new AlertData(savedData.getString("alerts" + i, "ERROR")));
-        }
-
-        for (int i = 0; i < tagsCount; i++)
-        {
-            allTags.add(new IDTag(savedData.getString("tags" + i, "ERROR")));
-        }
-
-        for (int i = 0; i < signInsCount; i++)
-        {
-            allSignIns.add(new SignInRecord(savedData.getString("signIns" + i, "ERROR")));
-        }
+        allTags = retrieveTags(savedData);
+        allAlerts = retrieveAlerts(savedData);
+        allSignIns = retrieveSignIns(savedData);
     }
 
     private void saveData()
@@ -340,47 +325,10 @@ public class Station2Activity extends Activity implements RecognitionListener
             j++;
         }
 
-        SharedPreferences.Editor edit = savedData.edit();
-        alertsCount = allAlerts.size();
-        tagsCount = allTags.size();
-        signInsCount = allSignIns.size();
-        edit.putInt("alertsCount", alertsCount);
-        edit.putInt("tagsCount", tagsCount);
-        edit.putInt("signInsCount", signInsCount);
-
-
-        for (int i = 0; i < allAlerts.size(); i++)
-        {
-            edit.putString("alerts" + i, allAlerts.get(i).serialize());
-        }
-
-        for (int i = 0; i < allTags.size(); i++)
-        {
-            edit.putString("tags" + i, allTags.get(i).serializeTag());
-        }
-
-        for (int i = 0; i < allSignIns.size(); i++)
-        {
-            edit.putString("signIns" + i, allSignIns.get(i).serializeRecord());
-        }
-
-        edit.commit();
-        Log.i("Offline Update", "Saved Data: alertCount: " + alertsCount + ", tagscount: " + tagsCount + ", signinscount: " + signInsCount);
-        Log.i("Offline Update", "Saved Data: allalerts: " + allAlerts.size() + ", alltags: " + allTags.size() + ", allsignins: " + allSignIns.size());
+        Utils.saveAllData(savedData, allTags, allAlerts, allSignIns);
     }
 
-    private IDTag findTagFromID(String tagIDin)
-    {
-        Log.i("Offline Update", "finding row from ID:" + tagIDin + ", searching " + allTags.size() + " rows.");
-        for (IDTag arow: allTags)
-        {
-            if(arow.getTagID().matches(tagIDin))
-            {
-                return arow;
-            }
-        }
-        return null;
-    }
+
 
     //[End of Offline loading]
 
@@ -394,7 +342,7 @@ public class Station2Activity extends Activity implements RecognitionListener
             if(anAlert.isActive() && anAlert.getType().matches(tag.getType()))
             {
                 hasNewAlerts = true;
-                alertSpeechString += anAlert.getAlertText() + " in " + anAlert.getStationID() + ". . .";
+                alertSpeechString += anAlert.getAlertText() + " in " + anAlert.getStationID() + ". . . ";
                 alertTextString += anAlert.getAlertText() + " in " + anAlert.getStationID() + "\n\n";
                 if(anAlert.getStationID().matches(currentStationID))
                 {
@@ -418,10 +366,10 @@ public class Station2Activity extends Activity implements RecognitionListener
 
     private void swipeActionHandler(String tagIDin)
     {
-        retrieveData();
+        allTags = retrieveTags(savedData);
 
 
-        IDTag tag = findTagFromID(tagIDin);
+        IDTag tag = findTagFromID(tagIDin, allTags);
         if(tag != null)
         {
             currentTag = tag;
@@ -1071,7 +1019,9 @@ public class Station2Activity extends Activity implements RecognitionListener
         }
         else if(result.matches(PingingFor_JanitorTroubleTicket2.Response_Tile))
         {
-
+            toSpeech.speak("Sounds like broken tiles, registering trouble ticket. Thank you for using Vida.", TextToSpeech.QUEUE_FLUSH, null, "EndOfTroubleTicketTile");
+            allAlerts.add(new AlertData(currentStationID, "Broken Tiles", true, IDTag.tagtype_TECHNICIAN_CLASS_1));
+            saveData();
         }
     }
 
