@@ -44,6 +44,7 @@ public class Manager2Activity extends FragmentActivity
     private Button addTechnician2AlertButton;
     private Button registerButton;
     private Button clearButton;
+    private Button clearSigninsButton;
     private TextView signinText;
     private EditText filterEditText;
 
@@ -75,14 +76,12 @@ public class Manager2Activity extends FragmentActivity
     private String fullSignIn;
     ArrayList<SignInRecord> current3LatestSignins;
 
+
     @Override
-    protected void onCreate(Bundle savedInstanceState)
+    protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manager2);
-
-
-
 
         signinText = (TextView) findViewById(R.id.signinsText);
         addCleanupAlertButton = (Button) findViewById(R.id.addJanitorAlertButton);
@@ -91,6 +90,7 @@ public class Manager2Activity extends FragmentActivity
         addTechnician2AlertButton = (Button) findViewById(R.id.addTechnician2AlertButton);
         registerButton = (Button) findViewById(R.id.registerButton);
         clearButton = (Button) findViewById(R.id.clearButton);
+        clearSigninsButton = (Button) findViewById(R.id.clearSigninsButton);
         stationIDText = (EditText) findViewById(R.id.stationIDEditText);
         alertTextText = (EditText) findViewById(R.id.alertTextEditText);
 
@@ -173,6 +173,17 @@ public class Manager2Activity extends FragmentActivity
             }
         });
 
+        clearSigninsButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                allSignInRecords = new ArrayList<SignInRecord>();
+                saveSignInData(savedData, allSignInRecords);
+                retrieveAllSignins();
+            }
+        });
+
         allSignins = new ArrayList<String>();
 
 
@@ -225,12 +236,11 @@ public class Manager2Activity extends FragmentActivity
             {
                 retrieveAllSignins();
             }
-        }, 1000);
+        }, 1000, 30000);
 
         pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "Manager_Activity_instructacon tag");
         wl.acquire();
-
 
     }
 
@@ -268,9 +278,6 @@ public class Manager2Activity extends FragmentActivity
     {
         super.onDestroy();
     }
-
-
-
 
     //[Offline loading]
 
@@ -392,7 +399,6 @@ public class Manager2Activity extends FragmentActivity
                 binarySortSignins(after);
             }
 
-
             output = before;
             output.add(middle);
             output.addAll(after);
@@ -400,6 +406,5 @@ public class Manager2Activity extends FragmentActivity
 
         return output;
     }
-
-
+    
 }

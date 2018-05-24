@@ -8,9 +8,14 @@
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.NFC"/>
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
+        android:required="true"/>
+
+    <uses-feature
+        android:name="android.hardware.nfc"
         android:required="true"/>
 
     <application
@@ -60,11 +65,23 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateUnchanged">
         </activity>
-        <activity android:name=".remastered.Station2Activity">
+        <activity android:name=".remastered.Station2Activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateUnchanged">
+            <meta-data
+                android:name="android.nfc.action.TECH_DISCOVERED"
+                android:resource="@xml/nfc_tech_filter"/>
         </activity>
-        <activity android:name=".remastered.Manager2Activity">
+        <activity android:name=".remastered.Manager2Activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateUnchanged">
         </activity>
-        <activity android:name=".remastered.Register2Activity">
+        <activity android:name=".remastered.Register2Activity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateUnchanged">
+            <meta-data
+                android:name="android.nfc.action.TECH_DISCOVERED"
+                android:resource="@xml/nfc_tech_filter"/>
         </activity>
     </application>
 

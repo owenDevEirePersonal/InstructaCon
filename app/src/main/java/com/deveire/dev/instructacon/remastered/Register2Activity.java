@@ -3,9 +3,16 @@ package com.deveire.dev.instructacon.remastered;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
+import android.nfc.Tag;
+import android.os.Parcelable;
 import android.os.PowerManager;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +25,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.deveire.dev.instructacon.AlertsRow;
 import com.deveire.dev.instructacon.DownloadCallback;
@@ -46,7 +54,6 @@ public class Register2Activity extends FragmentActivity
     private SpinnerAdapter typeSpinnerAdapter;
     private EditText nameText;
     private EditText tagIDEditText;
-    private TextView mapText;
 
     private Boolean hasState;
 
@@ -74,6 +81,8 @@ public class Register2Activity extends FragmentActivity
     private String currentUID;
     private String currentStationID;
     //[/Retreive Alert Data Variables]
+
+    private NfcAdapter nfcAdapt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -115,6 +124,8 @@ public class Register2Activity extends FragmentActivity
         tagsCount = 0;
         //[/Offline Setup]
 
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
+
         pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "activity_register_instructacon tag");
         wl.acquire();
@@ -131,6 +142,17 @@ public class Register2Activity extends FragmentActivity
         {
             wl.acquire();
         }
+
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
+        if(nfcAdapt == null)
+        {
+            Toast.makeText(this, "Please turn on NFC scanner before continuing", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        else
+        {
+            NfcScanner.setupForegroundDispatch(this, nfcAdapt);
+        }
     }
 
     @Override
@@ -138,6 +160,17 @@ public class Register2Activity extends FragmentActivity
     {
         Log.e("TileScanner", "onStop");
         hasState = false;
+
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
+        if(nfcAdapt == null)
+        {
+            Toast.makeText(this, "Please turn on NFC scanner before continuing", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        else
+        {
+            NfcScanner.setupForegroundDispatch(this, nfcAdapt);
+        }
 
         super.onPause();
         //finish();
@@ -150,18 +183,23 @@ public class Register2Activity extends FragmentActivity
         hasState = false;
         wl.release();
 
-
-
-        /*
-        if(btGatt != null)
-        {
-            btGatt.disconnect();
-            btGatt.close();
-        }
-        */
-
         super.onStop();
     }
+
+    //[NFC CODE]
+    @Override
+    protected void onNewIntent(Intent intent) {
+        /**
+         * This method gets called, when a new Intent gets associated with the current activity instance.
+         * Instead of creating a new activity, onNewIntent will be called. For more information have a look
+         * at the documentation.
+         *
+         * In our case this method gets called, when the user attaches a Tag to the device.
+         */
+        Log.i("NFCTEST", "onNewIntent: " + intent.toString());
+        tagIDEditText.setText(NfcScanner.getTagIDFromIntent(intent));
+    }
+    //[END OF NFC CODE]
 
 
     private void uploadEmployeeData(String namein, String tagIDin, String typeIn)

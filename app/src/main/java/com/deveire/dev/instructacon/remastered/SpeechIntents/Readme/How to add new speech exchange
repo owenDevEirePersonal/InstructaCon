@@ -1,0 +1,6 @@
+1. Create new SpeechIntent subclass
+2. Add prompt, keywords and Synonyms to SpeechIntent in constructor
+3. Add startRecog call to onDone in OnUtteranceProgressListener
+4. Add response logic to prepareResponseFor
+5. (Optional) Create instance of the SpeechIntent
+6. Call startDialog(SpeechIntent)

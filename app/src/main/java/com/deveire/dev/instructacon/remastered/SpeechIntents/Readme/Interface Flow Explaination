@@ -1,0 +1,33 @@
+Dialog with only 1 matching keyword
+Input
+=> startDialog(speechIntent)
+=> TextToSpeech.speak()
+=> toSpeech.onInitListener OnDone()
+=> startRecogListening(speechIntent)
+=> recog.startListening()
+=> onResults()
+=> handleResults()
+=> filterThroughClarification()
+=> prepareResponseFor(keyword, SpeechIntent)
+=> output
+
+
+Dialog with multiple matching keywords
+Input
+=> startDialog(speechIntent)
+=> TextToSpeech.speak()
+=> toSpeech.onInitListener OnDone()
+=> startRecogListening(speechIntent)
+=> recog.startListening()
+=> onResults()
+=> handleResults()
+=> filterThroughClarification()
+=> startDialog(ClarificationIntent(Possible Keywords))
+=> TextToSpeech.speak()
+=> toSpeech.onInitListener OnDone()
+=> startRecogListening(speechIntent)
+=> recog.startListening()
+=> onResults()
+=> handleResults()
+=> prepareResponseFor(sortThroughForFirstMatch(possible key words, clarificationIntent), previous speech intent)
+=> output

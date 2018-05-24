@@ -66,15 +66,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="0dp"
-                    android:layout_marginTop="32dp"
                     android:background="@drawable/rounded_button"
                     android:text="Register new Employee"
                     android:textColor="@color/cast_expanded_controller_text_color"
                     map:layout_constraintRight_toRightOf="@+id/addSecurityAlertButton"
-                    map:layout_constraintTop_toBottomOf="@+id/clearButton"
                     android:layout_marginLeft="0dp"
                     map:layout_constraintLeft_toLeftOf="@+id/addSecurityAlertButton"
-                    map:layout_constraintHorizontal_bias="0.518"/>
+                    map:layout_constraintHorizontal_bias="0.518"
+                    android:layout_marginTop="32dp"
+                    map:layout_constraintTop_toBottomOf="@+id/clearSigninsButton"/>
 
                 <Button
                     android:id="@+id/addSecurityAlertButton"
@@ -131,6 +131,20 @@
                     map:layout_constraintLeft_toLeftOf="@+id/addJanitorAlertButton"
                     map:layout_constraintRight_toRightOf="@+id/addJanitorAlertButton"
                     map:layout_constraintTop_toBottomOf="@+id/addTechnician2AlertButton"/>
+
+                <Button
+                    android:id="@+id/clearSigninsButton"
+                    style="@style/Widget.AppCompat.Button.Colored"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/rounded_button"
+                    android:text="Delete all Signin Records"
+                    android:textColor="@color/cast_expanded_controller_text_color"
+                    map:layout_constraintHorizontal_bias="0.0"
+                    map:layout_constraintLeft_toLeftOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintRight_toRightOf="@+id/addJanitorAlertButton"
+                    map:layout_constraintTop_toBottomOf="@+id/clearButton"/>
 
                 <EditText
                     android:id="@+id/stationIDEditText"

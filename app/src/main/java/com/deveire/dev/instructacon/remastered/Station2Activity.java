@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.PowerManager;
 import android.speech.RecognitionListener;
@@ -18,6 +19,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.deveire.dev.instructacon.R;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Clarification;
@@ -55,6 +57,7 @@ public class Station2Activity extends Activity implements RecognitionListener
     private TimerTask recogDefibulatorTask;
     //will check to see if recogIsRunning and if not will destroy and instanciate recog, as recog sometimes kills itself silently
     //requiring a restart. This loop will continually kill and restart recog, preventing it from killing itself off.
+    //[End of Experimental Recog instantly stopping BugFix Varaiables]
 
 
     private EditText debugIDEditText;
@@ -64,8 +67,6 @@ public class Station2Activity extends Activity implements RecognitionListener
     private ImageView jobFinishedImage;
     private ImageView leakInfoImage;
     private Button jobFinishedButton;
-
-    final static int PAIR_READER_REQUESTCODE = 9;
 
     //[Offline Variables]
     private SharedPreferences savedData;
@@ -111,6 +112,8 @@ public class Station2Activity extends Activity implements RecognitionListener
 
     private int scriptLine;
 
+    private NfcAdapter nfcAdapt;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -119,8 +122,6 @@ public class Station2Activity extends Activity implements RecognitionListener
 
         setupSpeechRecognition();
         setupTextToSpeech();
-        //setupTileScanner();
-
 
         nameEditText = (EditText) findViewById(R.id.nameEditText);
 
@@ -210,12 +211,6 @@ public class Station2Activity extends Activity implements RecognitionListener
             public void onClick(View v)
             {
                 Log.i("Offline check", "debugIDeditText = " + debugIDEditText.getText().toString());
-                //currentTag = findTagFromID(debugIDEditText.getText().toString());
-
-                //handleJanitorSwipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_JANITOR));
-                //handleSecuritySwipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_SECURITY));
-                //handleTechnicianClass1Swipe(new IDTag("Hugh man", "PlaceholderID", IDTag.tagtype_TECHNICIAN_CLASS_1));
-                //handleTechnicianClass2Swipe(currentTag);
                 swipeActionHandler(debugIDEditText.getText().toString());
             }
         });
@@ -229,20 +224,25 @@ public class Station2Activity extends Activity implements RecognitionListener
         stopLeakInfoTimer = new Timer();
         stopInProgressTimer = new Timer();
         stopJobFinishedTimer = new Timer();
+
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
     }
 
     @Override
     protected void onResume()
     {
         super.onResume();
-        /*hasState = true;
 
-        final IntentFilter intentFilter = new IntentFilter();
-
-        uidIsFound = false;
-        hasSufferedAtLeastOneFailureToReadUID = true;
-        tileReaderTimer = new Timer();
-        connectToTileScanner();*/
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
+        if(nfcAdapt == null)
+        {
+            Toast.makeText(this, "Please turn on NFC scanner before continuing", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        else
+        {
+            NfcScanner.setupForegroundDispatch(this, nfcAdapt);
+        }
 
         if(!wl.isHeld())
         {
@@ -257,22 +257,18 @@ public class Station2Activity extends Activity implements RecognitionListener
         if(aNetworkFragment != null)
         {
             aNetworkFragment.cancelDownload();
-        }
-
-        tileReaderTimer.cancel();
-        tileReaderTimer.purge();
-
-        //if scanner is connected, disconnect it
-        if(deviceManager.isConnection())
-        {
-            stopAllScans = true;
-            deviceManager.requestDisConnectDevice();
-        }
-
-        if(mScanner.isScanning())
-        {
-            mScanner.stopScan();
         }*/
+
+        nfcAdapt = NfcScanner.setupNfcScanner(this);
+        if(nfcAdapt == null)
+        {
+            Toast.makeText(this, "Please turn on NFC scanner before continuing", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        else
+        {
+            NfcScanner.setupForegroundDispatch(this, nfcAdapt);
+        }
 
         adSwapTimer.cancel();
         adSwapTimer.purge();
@@ -301,6 +297,18 @@ public class Station2Activity extends Activity implements RecognitionListener
         super.onStop();
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        /**
+         * This method gets called, when a new Intent gets associated with the current activity instance.
+         * Instead of creating a new activity, onNewIntent will be called. For more information have a look
+         * at the documentation.
+         *
+         * In our case this method gets called, when the user attaches a Tag to the device.
+         */
+        Log.i("NFCTEST", "onNewIntent: " + intent.toString());
+        swipeActionHandler(NfcScanner.getTagIDFromIntent(intent));
+    }
 
     //[Offline loading]
     private void retrieveData()
@@ -328,42 +336,10 @@ public class Station2Activity extends Activity implements RecognitionListener
         Utils.saveAllData(savedData, allTags, allAlerts, allSignIns);
     }
 
-
-
     //[End of Offline loading]
 
-    private void speakAlerts(IDTag tag)
-    {
-        boolean hasNewAlerts = false;
-        String alertSpeechString = "You have new alerts: . . . ";
-        String alertTextString = "You have new alerts: \n\n";
-        for (AlertData anAlert: allAlerts)
-        {
-            if(anAlert.isActive() && anAlert.getType().matches(tag.getType()))
-            {
-                hasNewAlerts = true;
-                alertSpeechString += anAlert.getAlertText() + " in " + anAlert.getStationID() + ". . . ";
-                alertTextString += anAlert.getAlertText() + " in " + anAlert.getStationID() + "\n\n";
-                if(anAlert.getStationID().matches(currentStationID))
-                {
-                    anAlert.setActive(false);
-                }
-            }
-        }
 
-        saveData();
-
-        if(!hasNewAlerts)
-        {
-            alertSpeechString = "You have no new alerts. . . ";
-            alertTextString = "You have no new alerts.\n\n";
-        }
-
-        alertDataText.setText(alertTextString);
-        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_FLUSH, null, "AlertsEnd");
-    }
-
-
+    //[Swipe Handling Methods]
     private void swipeActionHandler(String tagIDin)
     {
         allTags = retrieveTags(savedData);
@@ -441,6 +417,37 @@ public class Station2Activity extends Activity implements RecognitionListener
         }
     }
 
+    private void speakAlerts(IDTag tag)
+    {
+        boolean hasNewAlerts = false;
+        String alertSpeechString = "You have new alerts: . . . ";
+        String alertTextString = "You have new alerts: \n\n";
+        for (AlertData anAlert: allAlerts)
+        {
+            if(anAlert.isActive() && anAlert.getType().matches(tag.getType()))
+            {
+                hasNewAlerts = true;
+                alertSpeechString += anAlert.getAlertText() + " in " + anAlert.getStationID() + ". . . ";
+                alertTextString += anAlert.getAlertText() + " in " + anAlert.getStationID() + "\n\n";
+                if(anAlert.getStationID().matches(currentStationID))
+                {
+                    anAlert.setActive(false);
+                }
+            }
+        }
+
+        saveData();
+
+        if(!hasNewAlerts)
+        {
+            alertSpeechString = "You have no new alerts. . . ";
+            alertTextString = "You have no new alerts.\n\n";
+        }
+
+        alertDataText.setText(alertTextString);
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_FLUSH, null, "AlertsEnd");
+    }
+
     private void speakJanitorInstructions(IDTag tag)
     {
         String alertSpeechString = "Here are your instructions, Cleaner " + tag.getName() + ". . ";
@@ -502,6 +509,8 @@ public class Station2Activity extends Activity implements RecognitionListener
         instructionsDataText.setText(alertTextString);
         toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfTechnicianClass2Instructions");
     }
+
+    //[End of Swipe Handling Methods]
 
 
 //+++++++++++++++++++++++++++++++Voice Interface Code+++++++++++++++++++++++++++++++
