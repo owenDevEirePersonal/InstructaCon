@@ -1,0 +1,38 @@
+Troubler uses the Instructacon Speech System as a base to create a trouble ticketing system.
+
+The system is composed of 2 classes, 4 speech intents and an Activity
+
+Classes:
+TroubleTask - The end result of the system. Each Trouble Task represents an alert/task/activity/repair that will need to be performed
+to deal with the user's trouble ticket. Trouble Tasks has a description of the task, a description of the requirements and a list of TroubleTags.
+
+TroubleTag - A keyword that can be used to tag a TroubleTask to allow for determining what's involved with the task. Each Keyword has the keyword, a list of synomyns
+for the keyword and a PromptQuestion that intructacon asks when trying to rule out a tag.
+
+Speech Intents:
+PingingFor_MatchesKeyword - Takes in a TroubleTag and pulls data from it to ask a yes no question to the user. The anwser to this question is used to rule out tasks
+do or do not contain the tag.
+
+PingingFor_MatchesTask - Takes in a TroubleTask and pulls data from it to ask a yes no question as to whether this is the task the user ment. This is used when there
+are still multiple possible tasks remaining and further tags cannot narrow it down any further.
+
+PingingFor_TroublerStart - The start of the dialog, currently in which the user simply responses trouble ticket to begin the process.
+
+PingingFor_YourOwnTask - Asks the user to given their own describion of what needs to be done so it can recorded word for word.
+Called when all possible tasks on record have been ruled out.
+
+Activity:
+TroubleTicketActivity - The activity where everything happens.
+
+The Troubler Process:
+The process goes like this. Once the user triggers the process (in this case, by raising a trouble ticket) the system loads all stored TroubleTasks into a list of
+potential tasks, it take searches through the tags of these tasks to find the tag that, when asked to the user as to whether or not it's relevent, will elimate the
+most possiblities from that list regardless of whether the user answers yes or no.
+(i.e. it tries to find a tag that's found in half of all potential tasks, or the tag closer to it)
+
+Once the user answers, the tag is placed in the usedTag List and all trouble tasks that contains/didn't contain that tag are removed from the list of potential tasks.
+The system then repeats the process with the new shortened list of potential tasks until only one task is left, which is then outputed, or no remaining tags can be
+used to narrow down the search(e.g. all remaning possiblities have the same tags).
+
+At this point it runs down the list of remaining potential tasks, asking the user if this is the task they mean until it finds the correct task.
+If it exhausts the list and has not found the task then it will ask the user to record their description of the task and it will store that task for human review.

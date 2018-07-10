@@ -279,15 +279,7 @@ public class Manager2Activity extends FragmentActivity
         super.onDestroy();
     }
 
-    //[Offline loading]
-
-    private void saveData()
-    {
-        Utils.saveAllData(savedData, allTags, allAlerts, allSignInRecords);
-    }
-
-    //[/Offline loading]\
-
+    //Creates a new alert from the entered data and adds it to the sharedPreferences database
     private void uploadAlert(String alertType)
     {
         allAlerts = retrieveAlerts(savedData);
@@ -295,6 +287,7 @@ public class Manager2Activity extends FragmentActivity
         saveAlertData(savedData, allAlerts);
     }
 
+    //Loads all of the saved records of user's signing in and parse them all into a string which is then displayed on screen
     private void retrieveAllSignins()
     {
         allSignInRecords = retrieveSignIns(savedData);
@@ -332,6 +325,7 @@ public class Manager2Activity extends FragmentActivity
         });
     }
 
+    //take in a string and search through all signins for signins with matching usernames, then display each of those matches on screen
     private void filterSignins(String inFilter)
     {
         Log.i("Signins", " starting filterSignins");
@@ -365,6 +359,7 @@ public class Manager2Activity extends FragmentActivity
         });
     }
 
+    //Recursive Method that takes in an arraylist of SigninRecords and returns a binary sorted version.
     private ArrayList<SignInRecord> binarySortSignins(ArrayList<SignInRecord> records)
     {
         Log.i("Binary", "Starting binary sort on records of size: " + records.size());
@@ -406,5 +401,4 @@ public class Manager2Activity extends FragmentActivity
 
         return output;
     }
-    
 }

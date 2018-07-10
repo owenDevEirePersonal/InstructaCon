@@ -1,11 +1,9 @@
-package com.deveire.dev.instructacon.remastered.SpeechIntents;
+package com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents;
 
-import android.app.Activity;
 import android.content.Context;
-import android.widget.TextView;
-
 
 import com.deveire.dev.instructacon.remastered.SpeechIntent;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.TroubleKeyword;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,13 +12,13 @@ import java.util.HashMap;
  * Created by owenryan on 20/04/2018.
  */
 
-public class PingingFor_YesNo extends SpeechIntent
+public class PingingFor_MatchesKeyword extends SpeechIntent
 {
-    public PingingFor_YesNo()
+    public PingingFor_MatchesKeyword(TroubleKeyword keywordToMatch)
     {
-        super("PingingFor_YesNo");
+        super("PingingFor_YesNo_" + keywordToMatch);
         setFillInIntent(false);
-        setSpeechPrompt("You really should define this and not use the default one for this particular Speech Intent, you that know right?");
+        setSpeechPrompt(keywordToMatch.getPromptQuestion());
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         responses.put("Yes", SpeechIntent.compileSynonyms(new String[]{"ok", "yes", "okay", "correct", "yeah", "it does"}));
         responses.put("No", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "it doesn't", "not"}));

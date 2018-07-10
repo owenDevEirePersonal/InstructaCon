@@ -14,11 +14,11 @@
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
-        android:src="@drawable/sodexo2"
+        android:src="@drawable/applogo"
         map:layout_constraintLeft_toLeftOf="parent"
         map:layout_constraintRight_toRightOf="parent"
         map:layout_constraintTop_toTopOf="parent"
-        map:srcCompat="@drawable/sodexo2"
+        map:srcCompat="@drawable/applogo"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"/>
 

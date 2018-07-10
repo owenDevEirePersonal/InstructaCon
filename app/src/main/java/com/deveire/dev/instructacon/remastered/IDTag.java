@@ -13,6 +13,7 @@ public class IDTag
     public static final String tagtype_SECURITY = "Security";
     public static final String tagtype_TECHNICIAN_CLASS_1 = "Technician Class 1";
     public static final String tagtype_TECHNICIAN_CLASS_2 = "Technician Class 2";
+    public static final String tagtype_LAB_SECURITY = "Lab Security";
 
     private String name;
     private String tagID;

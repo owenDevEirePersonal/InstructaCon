@@ -1,21 +1,11 @@
 package com.deveire.dev.instructacon.remastered;
 
-import android.app.ProgressDialog;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.location.Location;
-import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
-import android.nfc.NfcEvent;
-import android.nfc.Tag;
-import android.os.Parcelable;
 import android.os.PowerManager;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -27,22 +17,9 @@ import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.deveire.dev.instructacon.AlertsRow;
-import com.deveire.dev.instructacon.DownloadCallback;
-import com.deveire.dev.instructacon.NetworkFragment;
 import com.deveire.dev.instructacon.R;
-import com.deveire.dev.instructacon.SignInsRow;
-import com.deveire.dev.instructacon.StationActivity;
-import com.deveire.dev.instructacon.TagsRow;
-import com.deveire.dev.instructacon.bleNfc.DeviceManager;
-import com.deveire.dev.instructacon.bleNfc.Scanner;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationRequest;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Timer;
 
 import static com.deveire.dev.instructacon.remastered.Utils.retrieveTags;
 import static com.deveire.dev.instructacon.remastered.Utils.saveTagData;
@@ -202,6 +179,8 @@ public class Register2Activity extends FragmentActivity
     //[END OF NFC CODE]
 
 
+    //Takes in a name, tag id and type, which are then used to create a new employee tag which is added to and saved to the list of employees on shared preferences,
+    // if a tag does not already exist with that same id. If one does exist then it's detials will be overwritten.
     private void uploadEmployeeData(String namein, String tagIDin, String typeIn)
     {
         allTags = retrieveTags(savedData);
@@ -239,6 +218,7 @@ public class Register2Activity extends FragmentActivity
         {
             case "Janitor": return IDTag.tagtype_JANITOR;
             case "Security Guard": return IDTag.tagtype_SECURITY;
+            case "Lab Security": return IDTag.tagtype_LAB_SECURITY;
             case "Technician Class 1": return IDTag.tagtype_TECHNICIAN_CLASS_1;
             case "Technician Class 2": return IDTag.tagtype_TECHNICIAN_CLASS_2;
             default: return "SPINNER OPTION DOESN'T MAKE ANY KNOWN TAG TYPE: PLEASE CHECK types_spinner_contents.xml";

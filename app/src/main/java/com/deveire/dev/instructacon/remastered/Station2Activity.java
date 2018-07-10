@@ -26,6 +26,8 @@ import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Clarific
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicket1;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicket2;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_JanitorTroubleTicketLeak1;
+import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Lockup1;
+import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Lockup2;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_YesNo;
 
 import java.util.ArrayList;
@@ -364,6 +366,7 @@ public class Station2Activity extends Activity implements RecognitionListener
             case IDTag.tagtype_SECURITY: handleSecuritySwipe(currentTag); break;
             case IDTag.tagtype_TECHNICIAN_CLASS_1: handleTechnicianClass1Swipe(currentTag); break;
             case IDTag.tagtype_TECHNICIAN_CLASS_2: handleTechnicianClass2Swipe(currentTag); break;
+            case IDTag.tagtype_LAB_SECURITY: handleLabSecurityClassSwipe(currentTag); break;
             default: Log.e("Swipe", "ERROR: UNIDENTIFIED CARD TYPE"); break;
         }
     }
@@ -415,6 +418,13 @@ public class Station2Activity extends Activity implements RecognitionListener
         {
             displayJobFinishedImage();
         }
+    }
+
+    private void handleLabSecurityClassSwipe(IDTag tag)
+    {
+        adImageView.setVisibility(View.INVISIBLE);
+        //speakAlerts(tag);
+        speakLabSecurityInstructions(tag);
     }
 
     private void speakAlerts(IDTag tag)
@@ -510,6 +520,16 @@ public class Station2Activity extends Activity implements RecognitionListener
         toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfTechnicianClass2Instructions");
     }
 
+    private void speakLabSecurityInstructions(IDTag tag)
+    {
+        String alertSpeechString = "Are you ready to secure the lab " + tag.getName() + ". . ";
+        String alertTextString = "\nAre you ready to secure the lab? " + tag.getName() + ":\n--------------------------------------------------------\n";
+
+
+        instructionsDataText.setText(alertTextString);
+        toSpeech.speak(alertSpeechString, TextToSpeech.QUEUE_ADD, null, "EndOfLabSecurityInstructions");
+    }
+
     //[End of Swipe Handling Methods]
 
 
@@ -603,6 +623,11 @@ public class Station2Activity extends Activity implements RecognitionListener
                         else if(utteranceId.matches("EndOfTechnicianClass2Instructions"))
                         {
                             displayInProgressImage();
+                        }
+                        else if(utteranceId.matches(new PingingFor_Lockup1().getName()))
+                        {
+                            //show checklist
+                            startDialog(new PingingFor_Lockup1());
                         }
                         else
                         {
@@ -974,6 +999,10 @@ public class Station2Activity extends Activity implements RecognitionListener
         {
             prepareResponseForJanitorTroubleTicketLeak1(result);
         }
+        else if(pingingFor.getName().matches(new PingingFor_Lockup1().getName()))
+        {
+            prepareResponseForLabSecurity1(result);
+        }
         else
         {
             Log.e("Response:", "No response setup for this intent: " + pingingFor.getName());
@@ -1073,6 +1102,18 @@ public class Station2Activity extends Activity implements RecognitionListener
             toSpeech.speak("Sounds like a leaking sink. Creating Trouble Ticket.", TextToSpeech.QUEUE_FLUSH, null, "JanitorCreatedLeakSinkTroubleTicket");
             allAlerts.add(new AlertData(currentStationID, "Leaking sink", true, IDTag.tagtype_TECHNICIAN_CLASS_2));
             saveData();
+        }
+    }
+
+    private void prepareResponseForLabSecurity1(String result)
+    {
+        if(result.matches(PingingFor_Lockup1.Response_Yes))
+        {
+            startDialog(new PingingFor_Lockup2());
+        }
+        else if(result.matches(PingingFor_Lockup1.Response_No))
+        {
+            toSpeech.speak("Please clear the room before proceeding.", TextToSpeech.QUEUE_FLUSH , null, "");
         }
     }
 //++++++++[End of Custom Responses]
