@@ -9,11 +9,10 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.ButtonBarLayout;
 import android.util.Log;
-import android.widget.Button;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,13 +20,14 @@ import com.deveire.dev.instructacon.R;
 import com.deveire.dev.instructacon.remastered.NfcScanner;
 import com.deveire.dev.instructacon.remastered.SpeechIntent;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Clarification;
-import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Lockup2;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_YesNo;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_IntialDescription;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesKeyword;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesTask;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_TroublerStart;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_YourOwnTask;
 
+import java.io.Flushable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -42,10 +42,16 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private TextView debugText;
     private TextView outputText;
 
+    private ImageView coverImage;
+
     private SpeechRecognizer recog;
     private Intent recogIntent;
     private SpeechIntent pingingRecogFor;
     private SpeechIntent previousPingingRecogFor;
+
+    private Timer imageTimer;
+
+    private Timer recogTimeoutTimer;
 
     //private final PingingForTest pingingForTest = new PingingForTest();
 
@@ -64,6 +70,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private PingingFor_YesNo pingingFor_isAFishYesNo;
 
     //[Troubler Variables]
+    private String deviceLocationName;
+
     private ArrayList<TroubleTask> allTroubleTasks;
     private ArrayList<TroubleTask> potentialTroubleTasks;
     private ArrayList<TroubleTask> eliminatedTroubleTasks;
@@ -85,7 +93,12 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         debugText = (TextView) findViewById(R.id.debugText);
         outputText = (TextView) findViewById(R.id.outputText);
 
+        coverImage = (ImageView) findViewById(R.id.coverImage);
+
+        imageTimer = new Timer();
+
         setupSpeechRecognition();
+        recogTimeoutTimer = new Timer();
         setupTextToSpeech();
 
         pingingFor_isAFishYesNo = new PingingFor_YesNo();
@@ -125,6 +138,13 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             NfcScanner.setupForegroundDispatch(this, nfcAdapt);
         }
 
+        coverImage.setVisibility(View.INVISIBLE);
+        imageTimer.cancel();
+        imageTimer.purge();
+
+        recogTimeoutTimer.cancel();
+        recogTimeoutTimer.purge();
+
         super.onPause();
     }
 
@@ -133,6 +153,14 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     {
         toSpeech.stop();
         toSpeech.shutdown();
+
+        coverImage.setVisibility(View.INVISIBLE);
+        imageTimer.cancel();
+        imageTimer.purge();
+
+        recogTimeoutTimer.cancel();
+        recogTimeoutTimer.purge();
+
         super.onStop();
     }
 
@@ -156,6 +184,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             @Override
             public void run()
             {
+                hideImage();
                 debugText.setText("Card Swiped, begining");
                 Log.i("TTDemo", debugText.getText().toString());
                 //startDialog(pingingFor_isAFishYesNo);
@@ -166,11 +195,45 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         //start Dialog here
     }
 
+    private void showImage(int resID)
+    {
+        coverImage.setImageResource(resID);
+        coverImage.setVisibility(View.VISIBLE);
+
+        imageTimer.cancel();
+        imageTimer.purge();
+        imageTimer = new Timer();
+        imageTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        coverImage.setVisibility(View.INVISIBLE);
+                    }
+                });
+            }
+        }, 10000);
+    }
+
+    private void hideImage()
+    {
+        coverImage.setVisibility(View.INVISIBLE);
+        imageTimer.cancel();
+        imageTimer.purge();
+    }
+
 //+++++++++++++++++++++++++++++++Troubler Code++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     private void setupTroubler()
     {
+        deviceLocationName = "Men's Bathroom";
+
         allTroubleTasks = new ArrayList<TroubleTask>();
         potentialTroubleTasks = new ArrayList<TroubleTask>();
         eliminatedTroubleTasks = new ArrayList<TroubleTask>();
@@ -301,31 +364,93 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void updatePotentialTasks(TroubleKeyword tag, boolean isTagCorrect)
     {
-        if(isTagCorrect)
+        if(tag == null)
         {
-            outputText.setText("Tag " + tag.getKeyword() + " is correct.");
+            Log.e("TTDemo", tag + " not found");
         }
         else
         {
-            outputText.setText("Tag " + tag.getKeyword() + " is incorrect.");
-        }
-
-
-        ArrayList<TroubleTask> newPotentialTroubleTasks = new ArrayList<TroubleTask>();
-        for (TroubleTask aTask: potentialTroubleTasks)
-        {
-            if((isTagCorrect && isInArray(aTask.getTags(), tag)) || (!isTagCorrect && !isInArray(aTask.getTags(), tag)))
+            if (isTagCorrect)
             {
-                newPotentialTroubleTasks.add(aTask);
+                outputText.setText("Tag " + tag.getKeyword() + " is correct.");
             }
             else
             {
-                eliminatedTroubleTasks.add(aTask);
+                outputText.setText("Tag " + tag.getKeyword() + " is incorrect.");
             }
+
+
+            ArrayList<TroubleTask> newPotentialTroubleTasks = new ArrayList<TroubleTask>();
+            for (TroubleTask aTask : potentialTroubleTasks)
+            {
+                if ((isTagCorrect && isInArray(aTask.getTags(), tag)) || (!isTagCorrect && !isInArray(aTask.getTags(), tag)))
+                {
+                    newPotentialTroubleTasks.add(aTask);
+                }
+                else
+                {
+                    eliminatedTroubleTasks.add(aTask);
+                }
+            }
+            usedKeywords.add(tag);
+            potentialTroubleTasks = newPotentialTroubleTasks;
         }
-        potentialTroubleTasks = newPotentialTroubleTasks;
     }
 
+    private void collectTagsFromString(String result)
+    {
+        String tagsFound = "";
+        for (TroubleKeyword aTag: allKnownKeywords)
+        {
+            if(result.contains(aTag.getKeyword()))
+            {
+                updatePotentialTasks(aTag, true);
+                tagsFound += " " + aTag.getKeyword();
+            }
+            else
+            {
+                for (String aSynomyn: aTag.getSynomyns())
+                {
+                    if(result.contains(aSynomyn))
+                    {
+                        updatePotentialTasks(aTag, true);
+                        tagsFound += " " + aTag.getKeyword();
+                        break;
+                    }
+                }
+            }
+        }
+        Log.i("TTDemo", "Tags found from initial description: " + tagsFound);
+    }
+
+    private void collectTagsFromLocation()
+    {
+        Log.i("TTDemo", "Collecting tags from location: " + deviceLocationName);
+        switch (deviceLocationName)
+        {
+            case "Men's Bathroom":  updatePotentialTasks(findTagInList("Eggs"), true); break;
+            default: break;
+        }
+    }
+
+    private TroubleKeyword findTagInList(String tagName)
+    {
+        for(TroubleKeyword atag: allKnownKeywords)
+        {
+            if(atag.getKeyword().matches(tagName))
+            {
+                return atag;
+            }
+        }
+        return null;
+    }
+
+    private void createNewAlert()
+    {
+        toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + ". And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
+        outputText.setText("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + " \n\n And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements());
+        showImage(R.drawable.inprogress_ad2);
+    }
 //+++++++++++++++++++++++++++++++End of Troubler Code+++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -392,6 +517,17 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                             });
                         }
                         else if(utteranceId.matches(new PingingFor_TroublerStart().getName()))
+                        {
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    startRecogListening(pingingRecogFor);
+                                }
+                            });
+                        }
+                        else if(utteranceId.matches(new PingingFor_IntialDescription().getName()))
                         {
                             runOnUiThread(new Runnable()
                             {
@@ -608,6 +744,27 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         recogIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
         recogIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
         recog.startListening(recogIntent);
+
+        recogTimeoutTimer.cancel();
+        recogTimeoutTimer.purge();
+        recogTimeoutTimer = new Timer();
+        recogTimeoutTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        recog.cancel();
+                        toSpeech.speak("I'm sorry but I'm having trouble connecting to the servers. Please check your wifi connection and try again.", TextToSpeech.QUEUE_FLUSH, null, "ErrRecogConnectionTimeout");
+
+                    }
+                });
+            }
+        }, 100000);
     }
 
     //Start of Recog result handling, if the recog intent was for clarification get the 1st keyword and prepare a response,
@@ -820,17 +977,40 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 potentialTroubleTasks = allTroubleTasks;
                 eliminatedTroubleTasks = new ArrayList<TroubleTask>();
                 usedKeywords = new ArrayList<TroubleKeyword>();
-                currentKeyword = getMostUsefulKeyword();
-                if(currentKeyword != null)
+                startDialog(new PingingFor_IntialDescription());
+            }
+            else if(result.matches("Directions to room 7"))
+            {
+                runOnUiThread(new Runnable()
                 {
-                    usedKeywords.add(currentKeyword);
-                    startDialog(new PingingFor_MatchesKeyword(currentKeyword));
-                }
-                else
-                {
-                    currentFinalistIndex = 0;
-                    startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
-                }
+                    @Override
+                    public void run()
+                    {
+                        outputText.setText("To get to room 7 take the stairs behind you up two floors, then head right and it's the 4th door on your left");
+                        toSpeech.speak("To get to room 7 take the stairs behind you up two floors, then head right and it's the 4th door on your left", TextToSpeech.QUEUE_FLUSH, null, "EndOfDirectionGiving");
+                    }
+                });
+
+            }
+        }
+        else if (pingingFor.getName().matches(new PingingFor_IntialDescription().getName()))
+        {
+            outputText.setText("Collecting Tags from Intial Description " + result);
+
+            collectTagsFromString(result);
+
+            collectTagsFromLocation();
+
+            currentKeyword = getMostUsefulKeyword();
+            if(currentKeyword != null)
+            {
+                //usedKeywords.add(currentKeyword);
+                startDialog(new PingingFor_MatchesKeyword(currentKeyword));
+            }
+            else
+            {
+                currentFinalistIndex = 0;
+                startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
             }
         }
         else if (pingingFor.getName().matches(new PingingFor_YourOwnTask().getName()))
@@ -842,8 +1022,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         {
             if(result.matches("Yes"))
             {
-                toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + ". And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
-                outputText.setText("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + " \n\n And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements());
+                createNewAlert();
             }
             else if(result.matches("No"))
             {
@@ -872,8 +1051,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
             if(potentialTroubleTasks.size() == 1)
             {
-                toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(0).getDescription() + ". And the requirements are as follows: " + potentialTroubleTasks.get(0).getRequirements(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
-                outputText.setText("Creating New Alert: " + potentialTroubleTasks.get(0).getDescription() + " \n\n And the requirements are as follows: " + potentialTroubleTasks.get(0).getRequirements());
+                createNewAlert();
             }
             else if (potentialTroubleTasks.size() == 0)
             {
@@ -885,7 +1063,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 if(currentKeyword != null)
                 {
                     Log.i("TTDemo", "currentKeyword is not null, moving to Task tag elimination");
-                    usedKeywords.add(currentKeyword);
+                    //usedKeywords.add(currentKeyword);
                     startDialog(new PingingFor_MatchesKeyword(currentKeyword));
                 }
                 else
