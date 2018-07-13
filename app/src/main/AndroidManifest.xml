@@ -85,7 +85,8 @@
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter"/>
         </activity>
-        <activity android:name=".remastered.TroubleTicketSystem.TroubleTicketActivity">
+        <activity android:name=".remastered.TroubleTicketSystem.TroubleTicketActivity"
+                  android:screenOrientation="portrait">
         </activity>
     </application>
 
