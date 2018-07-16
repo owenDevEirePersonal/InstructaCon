@@ -1,9 +1,11 @@
 package com.deveire.dev.instructacon.remastered.TroubleTicketSystem;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.os.Build;
+import android.os.PowerManager;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -83,6 +85,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private int currentFinalistIndex;
     //[End of Troubler Variables]
 
+    PowerManager pm;
+    PowerManager.WakeLock wl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -104,6 +108,10 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         pingingFor_isAFishYesNo = new PingingFor_YesNo();
         pingingFor_isAFishYesNo.setSpeechPrompt("Is that a fish");
 
+        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag");
+        wl.acquire();
+
         setupTroubler();
     }
 
@@ -121,6 +129,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         else
         {
             NfcScanner.setupForegroundDispatch(this, nfcAdapt);
+        }
+
+        if(!wl.isHeld())
+        {
+            wl.acquire();
         }
     }
 
@@ -160,6 +173,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
         recogTimeoutTimer.cancel();
         recogTimeoutTimer.purge();
+
+        wl.release();
 
         super.onStop();
     }

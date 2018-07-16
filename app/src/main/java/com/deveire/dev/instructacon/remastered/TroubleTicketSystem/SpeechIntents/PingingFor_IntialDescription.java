@@ -15,7 +15,7 @@ public class PingingFor_IntialDescription extends SpeechIntent
     {
         super("PingingFor_IntialDescription");
         setFillInIntent(true);
-        setSpeechPrompt("Raising Trouble Ticket. What seems to be the problem?");
+        setSpeechPrompt("Any preferred ingredients?");
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         setResponses(responses);
     }
