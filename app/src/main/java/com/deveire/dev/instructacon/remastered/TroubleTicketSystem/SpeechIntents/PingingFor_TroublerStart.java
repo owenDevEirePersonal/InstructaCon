@@ -19,7 +19,7 @@ public class PingingFor_TroublerStart extends SpeechIntent
         super("PingingFor_TroublerStart");
         setFillInIntent(false);
         //setSpeechPrompt("Instructacon Troubler System Online, how can I help?");
-        setSpeechPrompt(" Welcome to Instructacon Dan. What can VIDA do for you today?");
+        setSpeechPrompt(" Welcome Dan. What can I do for you today?");
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         responses.put("Raise Trouble Ticket", SpeechIntent.compileSynonyms(new String[]{
                 "Raise Trouble Ticket",
@@ -33,14 +33,33 @@ public class PingingFor_TroublerStart extends SpeechIntent
                 "How do i get to room 7",
                 "how do I get from here to room 7",
                 "where is room 7", "way to room 7",
-                "directions to room 7", "directions to meeting room 7",
+                "directions to room 7",
+                "directions to meeting room 7",
+                "I would like directions to room 7",
+                "I would like directions to meeting room 7",
                 "meeting meeting room 7",
                 "I need directions to meeting room 7",
                 "How do i get to meeting room 7",
                 "how do I get from here to meeting room 7",
                 "where is meeting room 7",
                 "way to meeting room 7"}));
+        responses.put("Directions to room 6", SpeechIntent.compileSynonyms(new String[]{
+                "I need directions to room 6",
+                "How do i get to room 6",
+                "how do I get from here to room 6",
+                "where is room 6", "way to room 6",
+                "directions to room 6",
+                "directions to meeting room 6",
+                "meeting meeting room 6",
+                "I would like directions to room 6",
+                "I would like directions to meeting room 6",
+                "I need directions to meeting room 6",
+                "How do i get to meeting room 6",
+                "how do I get from here to meeting room 6",
+                "where is meeting room 6",
+                "way to meeting room 6"}));
         responses.put("Call me back", SpeechIntent.compileSynonyms(new String[]{"call me back", "call me", "hear back from"}));
+        responses.put("Help", SpeechIntent.compileSynonyms(new String[]{"help", "how do you work", "how do I use you"}));
         responses.put("Nevermind", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "nevermind", "forget it"}));
         setResponses(responses);
     }

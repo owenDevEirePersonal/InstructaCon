@@ -33,6 +33,7 @@ import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_Scripted3;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedA1;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedB1;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedC1;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_TroublerStart;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_YourOwnTask;
 
@@ -124,7 +125,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
         setupTroubler();
 
-        showImage(R.drawable.instructacon_screen);
+        showImage(R.drawable.menu);
     }
 
     @Override
@@ -215,6 +216,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 debugText.setText("Card Swiped, begining");
                 Log.i("TTDemo", debugText.getText().toString());
                 //startDialog(pingingFor_isAFishYesNo);
+                showImage(R.drawable.menu);
                 startDialog(new PingingFor_TroublerStart());
             }
         });
@@ -683,6 +685,17 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                                 }
                             });
                         }
+                        else if(utteranceId.matches(new PingingFor_ScriptedC1().getName()))
+                        {
+                            runOnUiThread(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    startRecogListening(pingingRecogFor);
+                                }
+                            });
+                        }
                         else if(utteranceId.matches(pingingFor_isAFishYesNo.getName()))
                         {
                             runOnUiThread(new Runnable()
@@ -847,7 +860,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     public void onEndOfSpeech()
     {
         Log.e("Recog", "End ofSpeech");
-        Toast.makeText(getApplicationContext(), "End of Speak", Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), "End of Speech", Toast.LENGTH_LONG).show();
         recog.stopListening();
         recogTimeoutTimer.cancel();
         recogTimeoutTimer.purge();
@@ -1181,7 +1194,21 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     @Override
                     public void run()
                     {
+                        showImage(R.drawable.meeting_amy_map, 10000, R.drawable.menu);
                         startDialog(new PingingFor_ScriptedB1());
+                    }
+                });
+
+            }
+            else if(result.matches("Directions to room 6"))
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        showImage(R.drawable.meeting_amy_map_2, 10000, R.drawable.menu);
+                        startDialog(new PingingFor_ScriptedC1());
                     }
                 });
 
@@ -1197,15 +1224,23 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     }
                 });
             }
+            else if(result.matches("Help"))
+            {
+                toSpeech.speak("To use me, swipe again and use one of the following commands. . " +
+                                "If there is a problem and you wish to raise a trouble ticket, use the command. Raise Trouble Ticket. . " +
+                                "If you want directions to a room, use the command. Give me directions to room 7. For example. . " +
+                                "If you want a staff member to contact you, use the command. Call me back. . ", TextToSpeech.QUEUE_FLUSH, null, "HelpSpeech");
+            }
         }
         else if(pingingFor.getName().matches(new PingingFor_Scripted1().getName()))
         {
-            showImage(R.drawable.inprogress_ad2, 10000, R.drawable.instructacon_screen);
+            showImage(R.drawable.out_of_order, 10000, R.drawable.menu);
             startDialog(new PingingFor_Scripted2());
         }
         else if(pingingFor.getName().matches(new PingingFor_Scripted2().getName()))
         {
             toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+            showImage(R.drawable.plumber_phone_alert_1);
         }
         else if(pingingFor.getName().matches(new PingingFor_Scripted3("").getName()))
         {
@@ -1224,10 +1259,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         }
         else if(pingingFor.getName().matches(new PingingFor_ScriptedB1().getName()))
         {
-            if(result.matches("No"))
-            {
-                toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
-            }
+            toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+        }
+        else if(pingingFor.getName().matches(new PingingFor_ScriptedC1().getName()))
+        {
+            toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
         }
         else if (pingingFor.getName().matches(new PingingFor_IntialDescription().getName()))
         {
@@ -1249,8 +1285,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             }*/
 
             //script part
-            showImage(R.drawable.pick1screen);
-            currentMatchesOneOfKeywords = new PingingFor_MatchesOneOfKeywords(new TroubleKeyword[]{findTagInList("Hvac"), findTagInList("Urinal"), findTagInList("Ceiling"), findTagInList("Toilet"), findTagInList("Sink"), findTagInList("WHB"), findTagInList("Fan Assisted Heater")}, "Which of these is the leak in.  ");
+            showImage(R.drawable.elements);
+            currentMatchesOneOfKeywords = new PingingFor_MatchesOneOfKeywords(new TroubleKeyword[]{findTagInList("Hvac"), findTagInList("Urinal"), findTagInList("Ceiling"), findTagInList("Toilet"), findTagInList("Sink"), findTagInList("WHB"), findTagInList("Fan Assisted Heater")}, "What is leaking?");
             startDialog(currentMatchesOneOfKeywords);
         }
         else if (pingingFor.getName().matches(new PingingFor_YourOwnTask().getName()))
@@ -1260,7 +1296,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         }
         else if (pingingFor.getName().matches(currentMatchesOneOfKeywords.getName()))
         {
-            showImage(R.drawable.instructacon_screen);
+            showImage(R.drawable.menu);
             for(String aPossibleResult: currentMatchesOneOfKeywords.getResponseKeywords())
             {
                 if(aPossibleResult.matches(result))
