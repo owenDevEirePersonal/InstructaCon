@@ -17,7 +17,7 @@ public class PingingFor_Scripted2 extends SpeechIntent
     {
         super("PingingFor_Scripted2");
         setFillInIntent(false);
-        setSpeechPrompt("Trouble Ticket 2398 has been raised. Would you like to be kept  informed of the ticket's progress?");
+        setSpeechPrompt("Trouble Ticket 2 3 9 8 has been raised. Would you like to be kept informed of the ticket's progress?");
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         responses.put("Yes", SpeechIntent.compileSynonyms(new String[]{"ok", "yes", "okay", "correct", "yeah", "it does"}));
         responses.put("No", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "it doesn't", "not"}));

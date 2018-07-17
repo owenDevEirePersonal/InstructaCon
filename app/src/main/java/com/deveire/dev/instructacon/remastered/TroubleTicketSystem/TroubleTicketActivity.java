@@ -919,8 +919,9 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 Log.e("Recog", "NO MATCH ERROR");
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                 {
-                    debugText.setText("No Response Detected aborting.");
-                    toSpeech.speak("No Response Detected, aborting.", TextToSpeech.QUEUE_FLUSH, null, "EndError");
+                    debugText.setText("No Acceptable Response Detected aborting.");
+                    showImage(R.drawable.menu);
+                    toSpeech.speak("No Acceptable Response Detected, aborting.", TextToSpeech.QUEUE_FLUSH, null, "EndError");
                 }
                 break;
             default:
@@ -1139,7 +1140,6 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         if (possibleKeywords.size() > 1)
         {
             Log.i("Output", "about to start pinging for Clarification with: " + possibleKeywords.toString());
-            Log.i("Output", "about to start pinging for Clarification with: " + possibleKeywords.toString());
             debugText.setText("filterThroughClarification for clarification: Did you mean? " + possibleKeywords.toString());
             previousPingingRecogFor = pingingFor;
             startDialog(new PingingFor_Clarification(possibleKeywords));
@@ -1153,7 +1153,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             Log.i("Output", "Error prepareingResponses from filterThroughClarification, as possibleKeywords is empty: ");
             debugText.setText("Error prepareingResponses from filterThroughClarification, as possibleKeywords is empty: ");
             previousPingingRecogFor = pingingFor;
-            startDialog(new PingingFor_Clarification(pingingFor.getResponseKeywords()));
+            //startDialog(new PingingFor_Clarification(pingingFor.getResponseKeywords()));
+            this.onError(SpeechRecognizer.ERROR_NO_MATCH);
         }
     }
 
@@ -1230,6 +1231,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                                 "If there is a problem and you wish to raise a trouble ticket, use the command. Raise Trouble Ticket. . " +
                                 "If you want directions to a room, use the command. Give me directions to room 7. For example. . " +
                                 "If you want a staff member to contact you, use the command. Call me back. . ", TextToSpeech.QUEUE_FLUSH, null, "HelpSpeech");
+                toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_ADD, null, "EndOfScript");
             }
         }
         else if(pingingFor.getName().matches(new PingingFor_Scripted1().getName()))
