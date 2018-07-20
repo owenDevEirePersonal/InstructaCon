@@ -36,6 +36,7 @@ public class PingingFor_MatchesOneOfKeywords extends SpeechIntent
             i++;
         }
         setSpeechPrompt(fullPrompt);
+        responses.put("Never mind", SpeechIntent.compileSynonyms(new String[]{"never mind", "abort", "end dialog", "forget it"}));
         setResponses(responses);
     }
 

@@ -22,6 +22,7 @@ public class PingingFor_MatchesKeyword extends SpeechIntent
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         responses.put("Yes", SpeechIntent.compileSynonyms(new String[]{"ok", "yes", "okay", "correct", "yeah", "it does"}));
         responses.put("No", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "it doesn't", "not"}));
+        responses.put("Don't know", SpeechIntent.compileSynonyms(new String[]{"don't know", "not sure", "dunno", "do not know", "maybe", "wouldn't know"}));
         setResponses(responses);
     }
 

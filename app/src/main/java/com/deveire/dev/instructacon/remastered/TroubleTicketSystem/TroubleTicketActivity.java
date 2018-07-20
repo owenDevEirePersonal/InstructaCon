@@ -834,6 +834,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     public void onReadyForSpeech(Bundle bundle)
     {
         Log.e("Recog", "ReadyForSpeech");
+        Toast.makeText(getApplicationContext(), "Speak Now", Toast.LENGTH_SHORT).show();
         //recogIsRunning = false;
     }
 
@@ -860,7 +861,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     public void onEndOfSpeech()
     {
         Log.e("Recog", "End ofSpeech");
-        Toast.makeText(getApplicationContext(), "End of Speech", Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), "End of Speech", Toast.LENGTH_SHORT).show();
         recog.stopListening();
         recogTimeoutTimer.cancel();
         recogTimeoutTimer.purge();
@@ -919,9 +920,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 Log.e("Recog", "NO MATCH ERROR");
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                 {
-                    debugText.setText("No Acceptable Response Detected aborting.");
-                    showImage(R.drawable.menu);
-                    toSpeech.speak("No Acceptable Response Detected, aborting.", TextToSpeech.QUEUE_FLUSH, null, "EndError");
+                    //debugText.setText("No Acceptable Response Detected aborting.");
+                    //showImage(R.drawable.menu);
+                    //toSpeech.speak("No Acceptable Response Detected, aborting.", TextToSpeech.QUEUE_FLUSH, null, "EndError");
+                    toSpeech.speak("I'm sorry, I didn't catch that. ", TextToSpeech.QUEUE_FLUSH, null, "StartError");
+                    startDialogAfterCurrentDialog(pingingRecogFor);
                 }
                 break;
             default:
@@ -1252,12 +1255,22 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             }
             else if(result.matches("No"))
             {
-
+                potentialTroubleTasks = allTroubleTasks;
+                eliminatedTroubleTasks = new ArrayList<TroubleTask>();
+                usedKeywords = new ArrayList<TroubleKeyword>();
+                startDialog(new PingingFor_IntialDescription());
             }
         }
         else if(pingingFor.getName().matches(new PingingFor_ScriptedA1().getName()))
         {
-            toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+            if(result.matches("No"))
+            {
+                toSpeech.speak("Ok lets start over. Please tap your card to begin.", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+            }
+            else
+            {
+                toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+            }
         }
         else if(pingingFor.getName().matches(new PingingFor_ScriptedB1().getName()))
         {
@@ -1314,7 +1327,15 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
             if(potentialTroubleTasks.size() == 1)
             {
-                createNewAlert();
+                Log.e("TTDemo", "Fish");
+                if(potentialTroubleTasks.get(0).getDescription().matches("Fix leaking Sink in Gents Washroom"))
+                {
+                    createNewAlert();
+                }
+                else
+                {
+                    toSpeech.speak("I'm sorry but the trial version of Instructacon only contains imagery for the sink. Please restart the demo by swiping your card.", TextToSpeech.QUEUE_FLUSH, null, "EndOfNotSink");
+                }
                 //startDialogAfterCurrentDialog(new PingingFor_Scripted1());
             }
             else if (potentialTroubleTasks.size() == 0)
@@ -1343,12 +1364,26 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         {
             if(result.matches("Yes"))
             {
-                createNewAlert();
+                Log.e("TTDemo", potentialTroubleTasks.get(currentFinalistIndex).getDescription());
+                Log.e("TTDemo", "Sink");
+                if(potentialTroubleTasks.get(currentFinalistIndex).getDescription().matches("Sink"))
+                {
+                    createNewAlert();
+                }
+                else
+                {
+                    toSpeech.speak("I'm sorry but the trail version of Instructacon only contains imaginery for the sink. Please restart the demo by swiping your card.", TextToSpeech.QUEUE_FLUSH, null, "EndOfNotSink");
+                }
                 //startDialogAfterCurrentDialog(new PingingFor_Scripted1());
             }
             else if(result.matches("No"))
             {
-                currentFinalistIndex++;
+                outputText.setText("Raising Trouble Ticket");
+                potentialTroubleTasks = allTroubleTasks;
+                eliminatedTroubleTasks = new ArrayList<TroubleTask>();
+                usedKeywords = new ArrayList<TroubleKeyword>();
+                startDialog(new PingingFor_IntialDescription());
+                /*currentFinalistIndex++;
                 if(currentFinalistIndex < potentialTroubleTasks.size())
                 {
                     startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
@@ -1356,7 +1391,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 else
                 {
                     startDialog(new PingingFor_YourOwnTask());
-                }
+                }*/
             }
 
         }
@@ -1370,9 +1405,15 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             {
                 updatePotentialTasks(currentKeyword, false);
             }
+            else if(result.matches("Don't know"))
+            {
+                outputText.setText("Tag " + currentKeyword.getKeyword() + " is ambiguous.");
+                usedKeywords.add(currentKeyword);
+            }
 
             if(potentialTroubleTasks.size() == 1)
             {
+                Log.e("TTDemo", "Arf");
                 createNewAlert();
                 startDialogAfterCurrentDialog(new PingingFor_Scripted1());
 
