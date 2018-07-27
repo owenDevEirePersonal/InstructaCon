@@ -12,7 +12,6 @@ import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.os.Bundle;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -28,16 +27,12 @@ import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesKeyword;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesOneOfKeywords;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesTask;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_Scripted1;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_Scripted2;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_Scripted3;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedA1;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedB1;
-import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_ScriptedC1;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_CallMeBack;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_GetDirections_RoomA;
+import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_GetDirections_RoomB;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_TroublerStart;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_YourOwnTask;
 
-import java.io.Flushable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -297,7 +292,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void setupTroubler()
     {
-        deviceLocationName = "Men's Bathroom";
+        deviceLocationName = "Joe's Egg Diner";
 
         allTroubleTasks = new ArrayList<TroubleTask>();
         potentialTroubleTasks = new ArrayList<TroubleTask>();
@@ -310,100 +305,62 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
         currentMatchesOneOfKeywords = new PingingFor_MatchesOneOfKeywords();
 
+        TroubleTask newTask;
+
         ArrayList<TroubleKeyword> newTaskTags = new ArrayList<TroubleKeyword>();
-        /*newTaskTags.add(new TroubleKeyword("Milk", new String[]{"Milk", "Cow Liquid", "Cream"}, "Does your meal use any milk?"));
+        newTaskTags.add(new TroubleKeyword("Milk", new String[]{"Milk", "Cow Liquid", "Cream"}, "Does your meal use any milk?"));
         newTaskTags.add(new TroubleKeyword("Eggs", new String[]{"Eggs", "egg", "eggwhites"}, "Does your meal use eggs?"));
         newTaskTags.add(new TroubleKeyword("Bacon", new String[]{"Bacon", "rashers", "pork"}, "Does your meal use bacon or other pork products?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type A", "Do you wish to order Meal Type A?", newTaskTags, "1 Frying Pan, 3 eggs, 4 strips of bacon and a half litre of milk"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type A", "Do you wish to order Meal Type A?", newTaskTags, "1 Frying Pan, 3 eggs, 4 strips of bacon and a half litre of milk"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type A. .. .. .. Eggs and Bacon", "Do you wish to order Meal Type A. . Eggs and Bacon?", newTaskTags, "1 Frying Pan, 3 eggs, 4 strips of bacon and a half litre of milk");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("Milk", new String[]{"Milk", "Cow Liquid", "Cream"}, "Does you meal use any milk?"));
         newTaskTags.add(new TroubleKeyword("Eggs", new String[]{"Eggs", "egg", "eggwhites"}, "Does your meal use eggs?"));
         newTaskTags.add(new TroubleKeyword("Pancakes", new String[]{"Pancakes", "flapjacks", "waffles"}, "Does your meal include pancakes, panacakes or whatever you call them?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type B", "Do you wish to order Meal Type B?", newTaskTags, "1 Frying Pan, 3 eggs, 1 jug of pancake mix and a half litre of milk"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type B", "Do you wish to order Meal Type B?", newTaskTags, "1 Frying Pan, 3 eggs, 1 jug of pancake mix and a half litre of milk"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type B. . . . Pancakes", "Do you wish to order Meal Type B. . Pancakes?", newTaskTags, "1 Frying Pan, 3 eggs, 1 jug of pancake mix and a half litre of milk");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("fish", new String[]{"fish", "cod", "sea meat"}, "Does your meal use some kind of fish?"));
         newTaskTags.add(new TroubleKeyword("Eggs", new String[]{"Eggs", "egg", "eggwhites"}, "Does your meal use eggs?"));
         newTaskTags.add(new TroubleKeyword("Beans", new String[]{"beans"}, "Does your meal include beans, baked or otherwise?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type C", "Do you wish to order Meal Type C?", newTaskTags, "1 Frying Pan, 3 eggs, 1 codfish and half a tin of beans"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type C", "Do you wish to order Meal Type C?", newTaskTags, "1 Frying Pan, 3 eggs, 1 codfish and half a tin of beans"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type C. . Eggs, Fried Cod and beans", "Do you wish to order Meal Type C. . Eggs, Fried Cod and beans?", newTaskTags, "1 Frying Pan, 3 eggs, 1 codfish and half a tin of beans");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("fish", new String[]{"fish", "cod", "sea meat"}, "Does your meal use some kind of fish?"));
         newTaskTags.add(new TroubleKeyword("Bacon", new String[]{"Bacon", "rashers", "pork"}, "Does your meal use bacon or other pork products?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type D", "Do you wish to order Meal Type D?", newTaskTags, "1 Frying Pan, 1 codfish and 5 strips of bacon"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type D", "Do you wish to order Meal Type D?", newTaskTags, "1 Frying Pan, 1 codfish and 5 strips of bacon"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type D. . Bacon and Fish", "Do you wish to order Meal Type D. . Bacon and Fish?", newTaskTags, "1 Frying Pan, 1 codfish and 5 strips of bacon");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("Beans", new String[]{"beans"}, "Does your meal include beans, baked or otherwise?"));
         newTaskTags.add(new TroubleKeyword("Cheese", new String[]{"Cheese"}, "Does your meal include cheese or other fermented non-meat, non-manure bovine product?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type E", "Do you wish to order Meal Type E?", newTaskTags, "1 Pot, 47 Cheese wheels, 1 tin of beans, 5 salt pile and Alchemy Skill of 25 or greater"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type E", "Do you wish to order Meal Type E?", newTaskTags, "1 Pot, 47 Cheese wheels, 1 tin of beans, 5 salt pile and Alchemy Skill of 25 or greater"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type E. . Beans and Fondue", "Do you wish to order Meal Type E. . Beans and Fondue?", newTaskTags, "1 Pot, 47 Cheese wheels, 1 tin of beans, 5 salt pile and Alchemy Skill of 25 or greater");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("Milk", new String[]{"Milk", "Cow Liquid", "Cream"}, "Does you meal use any milk?"));
         newTaskTags.add(new TroubleKeyword("Eggs", new String[]{"Eggs", "egg", "eggwhites"}, "Does your meal use eggs?"));
         newTaskTags.add(new TroubleKeyword("Cheese", new String[]{"Cheese"}, "Does your meal include cheese or other fermented non-meat, non-manure bovine product?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type F", "Do you wish to order Meal Type F?", newTaskTags, "1 Pot, 49 and a half Cheese wheels, 2 eggs, 5 buckets of milk and knowledge of the Whirlwind Sprint Shout"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type F", "Do you wish to order Meal Type F?", newTaskTags, "1 Pot, 49 and a half Cheese wheels, 2 eggs, 5 buckets of milk and knowledge of the Whirlwind Sprint Shout"));
+        newTask = new TroubleTask("Cook 1 serving of Meal type F. . Cheese Omelet", "Do you wish to order Meal Type F. . Cheese Omelet?", newTaskTags, "1 Pot, 49 and a half Cheese wheels, 2 eggs, 5 buckets of milk and knowledge of the Whirlwind Sprint Shout");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(new TroubleKeyword("Beans", new String[]{"beans"}, "Does your meal include beans, baked or otherwise?"));
         newTaskTags.add(new TroubleKeyword("Eggs", new String[]{"Eggs", "egg", "eggwhites"}, "Does your meal use eggs?"));
         newTaskTags.add(new TroubleKeyword("fish", new String[]{"fish", "cod", "sea meat"}, "Does your meal use some kind of fish?"));
-        allTroubleTasks.add(new TroubleTask("Cook 1 serving of Meal type G", "Do you wish to order Meal Type G?", newTaskTags, "1 Pot, 1 Herring, red for preferance, 8 eggs and a large tin of beans"));
-        addToKnownKeywords(new TroubleTask("Cook 1 serving of Meal type G", "Do you wish to order Meal Type G?", newTaskTags, "1 Pot, 1 Herring, red for preferance, 8 eggs and a large tin of beans"));
-        */
+        newTask = new TroubleTask("Cook 1 serving of Meal type G. . Eggs, Fried Herring and Beans", "Do you wish to order Meal Type G. . Eggs, Fried Herring and Beans?", newTaskTags, "1 Pot, 1 Herring, red for preferance, 8 eggs and a large tin of beans");
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
 
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Sink", new String[]{"Sink"}, "Is the problem with the Sink?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking Sink in Gents Washroom", "Is the issue related to a leak of water from the Sink in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking Sink in Gents Washroom", "Is the issue related to a leak of water from the Sink in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Hvac", new String[]{"Hvac", "H vac", "ceiling vent"}, "Is the problem with the H Vac?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking H Vac in Gents Washroom", "Is the issue related to a leak of water from the H Vac unit in the ceiling of the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking H Vac in Gents Washroom", "Is the issue related to a leak of water from the H Vac unit in the ceiling of the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Urinal", new String[]{"Urinal"}, "Is the problem with a Urinal?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking Urinal", "Is the issue related to a leak of water from a Urinal in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking Urinal", "Is the issue related to a leak of water from a Urinal in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Ceiling", new String[]{"Ceiling"}, "Is the problem with the Ceiling?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking ceiling", "Is the issue related to a leak of water coming from ceiling of the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking ceiling", "Is the issue related to a leak of water coming from ceiling of the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Toilet", new String[]{"Toilet"}, "Is the problem with a Toilet?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking Toilet", "Is the issue related to a leak of water from a Toilet in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking Toilet", "Is the issue related to a leak of water from a Toilet in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("WHB", new String[]{"WHB"}, "Is the problem with the WHB Unit?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix leaking WHB", "Is the issue related to a leak of water from the WHB unit in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-        addToKnownKeywords(new TroubleTask("Fix leaking WHB", "Is the issue related to a leak of water from the WHB unit in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Fan Assisted Heater", new String[]{"Fan Assisted Heater", "Fan assisted radiator", "heater"}, "Is the problem with the fan assisted heater?"));
-        newTaskTags.add(new TroubleKeyword("Bathroom", new String[]{"Bathroom", "Restroom"}, "Is the problem in a bathroom?"));
-        allTroubleTasks.add(new TroubleTask("Fix malfunctioning Fan Assisted Heater", "Is the issue related to a leak of water from a fan assisted heater in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant, 1 Electrican, Large amount of spare parts"));
-        addToKnownKeywords(new TroubleTask("Fix malfunctioning Fan Assisted Heater", "Is the issue related to a leak of water from a fan assisted heater in the west wing Men's Washroom?", newTaskTags, "1 Plumber, some sealant, 1 Electrican, Large amount of spare parts"));
-
-        newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(new TroubleKeyword("Plug", new String[]{"Plug"}, "Is the problem with a plug socket?"));
-        allTroubleTasks.add(new TroubleTask("Fix damage electrical socket", "Is an electrical socket broken?", newTaskTags, "1 Electrician"));
-        addToKnownKeywords(new TroubleTask("Fix damage electrical socket", "Is an electrical socket broken?", newTaskTags, "1 Electrician"));
 
 
     }
@@ -517,6 +474,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private void collectTagsFromString(String result)
     {
         String tagsFound = "";
+        //tagsFound is for debugging only
         for (TroubleKeyword aTag: allKnownKeywords)
         {
             if(result.contains(aTag.getKeyword()))
@@ -545,7 +503,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         Log.i("TTDemo", "Collecting tags from location: " + deviceLocationName);
         switch (deviceLocationName)
         {
-            case "Men's Bathroom":  updatePotentialTasks(findTagInList("Eggs"), true); break;
+            case "Joe's Egg Diner":  updatePotentialTasks(findTagInList("Eggs"), true); break;
             default: break;
         }
     }
@@ -564,10 +522,39 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void createNewAlert()
     {
-        /*toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + ". And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
+        toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + ". And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
         outputText.setText("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription() + " \n\n And the requirements are as follows: " + potentialTroubleTasks.get(currentFinalistIndex).getRequirements());
-        showImage(R.drawable.inprogress_ad2, 10000);*/
-        startDialog(new PingingFor_Scripted3(potentialTroubleTasks.get(currentFinalistIndex).getPromptQuestion()));
+        showImage(R.drawable.inprogress_ad2, 10000);
+    }
+
+    private void resolveUpdatedPotentialTasks()
+    {
+        if(potentialTroubleTasks.size() == 1)
+        {
+            Log.e("TTDemo", "Only 1 Potential Task Remains");
+            createNewAlert();
+        }
+        else if (potentialTroubleTasks.size() == 0)
+        {
+            startDialog(new PingingFor_YourOwnTask());
+        }
+        else
+        {
+            currentKeyword = getMostUsefulKeyword();
+            if(currentKeyword != null)
+            {
+                Log.i("TTDemo", "currentKeyword is not null, moving to Task tag elimination");
+                //usedKeywords.add(currentKeyword);
+                startDialog(new PingingFor_MatchesKeyword(currentKeyword));
+            }
+            else
+            {
+                Log.i("TTDemo", "currentKeyword is null, moving to Task finalist elimination");
+                currentFinalistIndex = 0;
+                Log.i("TTDemo", "currentTask Finalist: " + potentialTroubleTasks.get(currentFinalistIndex).getPromptQuestion());
+                startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
+            }
+        }
     }
 //+++++++++++++++++++++++++++++++End of Troubler Code+++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -630,7 +617,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                                 }
                             });
                         }
-                        else if(utteranceId.matches(new PingingFor_Scripted1().getName()))
+                        else if(utteranceId.matches(new PingingFor_CallMeBack().getName()))
                         {
                             runOnUiThread(new Runnable()
                             {
@@ -641,7 +628,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                                 }
                             });
                         }
-                        else if(utteranceId.matches(new PingingFor_Scripted2().getName()))
+                        else if(utteranceId.matches(new PingingFor_GetDirections_RoomA().getName()))
                         {
                             runOnUiThread(new Runnable()
                             {
@@ -652,40 +639,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                                 }
                             });
                         }
-                        else if(utteranceId.matches(new PingingFor_Scripted3("").getName()))
-                        {
-                            runOnUiThread(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    startRecogListening(pingingRecogFor);
-                                }
-                            });
-                        }
-                        else if(utteranceId.matches(new PingingFor_ScriptedA1().getName()))
-                        {
-                            runOnUiThread(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    startRecogListening(pingingRecogFor);
-                                }
-                            });
-                        }
-                        else if(utteranceId.matches(new PingingFor_ScriptedB1().getName()))
-                        {
-                            runOnUiThread(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    startRecogListening(pingingRecogFor);
-                                }
-                            });
-                        }
-                        else if(utteranceId.matches(new PingingFor_ScriptedC1().getName()))
+                        else if(utteranceId.matches(new PingingFor_GetDirections_RoomB().getName()))
                         {
                             runOnUiThread(new Runnable()
                             {
@@ -1191,7 +1145,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 usedKeywords = new ArrayList<TroubleKeyword>();
                 startDialog(new PingingFor_IntialDescription());
             }
-            else if(result.matches("Directions to room 7"))
+            else if(result.matches("Directions to room A"))
             {
                 runOnUiThread(new Runnable()
                 {
@@ -1199,12 +1153,12 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     public void run()
                     {
                         showImage(R.drawable.meeting_amy_map, 10000, R.drawable.menu);
-                        startDialog(new PingingFor_ScriptedB1());
+                        startDialog(new PingingFor_GetDirections_RoomA());
                     }
                 });
 
             }
-            else if(result.matches("Directions to room 6"))
+            else if(result.matches("Directions to room B"))
             {
                 runOnUiThread(new Runnable()
                 {
@@ -1212,7 +1166,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     public void run()
                     {
                         showImage(R.drawable.meeting_amy_map_2, 10000, R.drawable.menu);
-                        startDialog(new PingingFor_ScriptedC1());
+                        startDialog(new PingingFor_GetDirections_RoomB());
                     }
                 });
 
@@ -1224,44 +1178,20 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     @Override
                     public void run()
                     {
-                        startDialog(new PingingFor_ScriptedA1());
+                        startDialog(new PingingFor_CallMeBack());
                     }
                 });
             }
             else if(result.matches("Help"))
             {
                 toSpeech.speak("To use me, swipe again and use one of the following commands. . " +
-                                "If there is a problem and you wish to raise a trouble ticket, use the command. Raise Trouble Ticket. . " +
+                                "If there you wish to test the Troubler Trouble Ticketing system, use the command. Raise Trouble Ticket. . " +
                                 "If you want directions to a room, use the command. Give me directions to room 7. For example. . " +
                                 "If you want a staff member to contact you, use the command. Call me back. . ", TextToSpeech.QUEUE_FLUSH, null, "HelpSpeech");
-                toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_ADD, null, "EndOfScript");
+                toSpeech.speak("Thank you and have a nice day", TextToSpeech.QUEUE_ADD, null, "EndOfScript");
             }
         }
-        else if(pingingFor.getName().matches(new PingingFor_Scripted1().getName()))
-        {
-            showImage(R.drawable.out_of_order, 10000, R.drawable.menu);
-            startDialog(new PingingFor_Scripted2());
-        }
-        else if(pingingFor.getName().matches(new PingingFor_Scripted2().getName()))
-        {
-            toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
-            showImage(R.drawable.plumber_phone_alert_1);
-        }
-        else if(pingingFor.getName().matches(new PingingFor_Scripted3("").getName()))
-        {
-            if(result.matches("Yes"))
-            {
-                startDialog(new PingingFor_Scripted1());
-            }
-            else if(result.matches("No"))
-            {
-                potentialTroubleTasks = allTroubleTasks;
-                eliminatedTroubleTasks = new ArrayList<TroubleTask>();
-                usedKeywords = new ArrayList<TroubleKeyword>();
-                startDialog(new PingingFor_IntialDescription());
-            }
-        }
-        else if(pingingFor.getName().matches(new PingingFor_ScriptedA1().getName()))
+        else if(pingingFor.getName().matches(new PingingFor_CallMeBack().getName()))
         {
             if(result.matches("No"))
             {
@@ -1269,14 +1199,14 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             }
             else
             {
-                toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+                toSpeech.speak("Thank you and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
             }
         }
-        else if(pingingFor.getName().matches(new PingingFor_ScriptedB1().getName()))
+        else if(pingingFor.getName().matches(new PingingFor_GetDirections_RoomA().getName()))
         {
-            toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
+            toSpeech.speak("Thank you and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
         }
-        else if(pingingFor.getName().matches(new PingingFor_ScriptedC1().getName()))
+        else if(pingingFor.getName().matches(new PingingFor_GetDirections_RoomB().getName()))
         {
             toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
         }
@@ -1288,7 +1218,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
             collectTagsFromLocation();
 
-            /*currentKeyword = getMostUsefulKeyword();
+            currentKeyword = getMostUsefulKeyword();
             if(currentKeyword != null)
             {
                 startDialog(new PingingFor_MatchesKeyword(currentKeyword));
@@ -1297,12 +1227,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             {
                 currentFinalistIndex = 0;
                 startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
-            }*/
-
-            //script part
-            showImage(R.drawable.elements);
-            currentMatchesOneOfKeywords = new PingingFor_MatchesOneOfKeywords(new TroubleKeyword[]{findTagInList("Hvac"), findTagInList("Urinal"), findTagInList("Ceiling"), findTagInList("Toilet"), findTagInList("Sink"), findTagInList("WHB"), findTagInList("Fan Assisted Heater")}, "What is leaking?");
-            startDialog(currentMatchesOneOfKeywords);
+            }
         }
         else if (pingingFor.getName().matches(new PingingFor_YourOwnTask().getName()))
         {
@@ -1324,66 +1249,19 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 }
             }
 
+            resolveUpdatedPotentialTasks();
 
-            if(potentialTroubleTasks.size() == 1)
-            {
-                Log.e("TTDemo", "Fish");
-                if(potentialTroubleTasks.get(0).getDescription().matches("Fix leaking Sink in Gents Washroom"))
-                {
-                    createNewAlert();
-                }
-                else
-                {
-                    toSpeech.speak("I'm sorry but the trial version of Instructacon only contains imagery for the sink. Please restart the demo by swiping your card.", TextToSpeech.QUEUE_FLUSH, null, "EndOfNotSink");
-                }
-                //startDialogAfterCurrentDialog(new PingingFor_Scripted1());
-            }
-            else if (potentialTroubleTasks.size() == 0)
-            {
-                startDialog(new PingingFor_YourOwnTask());
-            }
-            else
-            {
-                currentKeyword = getMostUsefulKeyword();
-                if(currentKeyword != null)
-                {
-                    Log.i("TTDemo", "currentKeyword is not null, moving to Task tag elimination");
-                    //usedKeywords.add(currentKeyword);
-                    startDialog(new PingingFor_MatchesKeyword(currentKeyword));
-                }
-                else
-                {
-                    Log.i("TTDemo", "currentKeyword is null, moving to Task finalist elimination");
-                    currentFinalistIndex = 0;
-                    Log.i("TTDemo", "currentTask Finalist: " + potentialTroubleTasks.get(currentFinalistIndex).getPromptQuestion());
-                    startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
-                }
-            }
         }
         else if(pingingFor.getName().matches(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)).getName()))
         {
             if(result.matches("Yes"))
             {
-                Log.e("TTDemo", potentialTroubleTasks.get(currentFinalistIndex).getDescription());
-                Log.e("TTDemo", "Sink");
-                if(potentialTroubleTasks.get(currentFinalistIndex).getDescription().matches("Sink"))
-                {
-                    createNewAlert();
-                }
-                else
-                {
-                    toSpeech.speak("I'm sorry but the trail version of Instructacon only contains imaginery for the sink. Please restart the demo by swiping your card.", TextToSpeech.QUEUE_FLUSH, null, "EndOfNotSink");
-                }
-                //startDialogAfterCurrentDialog(new PingingFor_Scripted1());
+                Log.e("TTDemo", "User has picked this task as correct: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription());
+                createNewAlert();
             }
             else if(result.matches("No"))
             {
-                outputText.setText("Raising Trouble Ticket");
-                potentialTroubleTasks = allTroubleTasks;
-                eliminatedTroubleTasks = new ArrayList<TroubleTask>();
-                usedKeywords = new ArrayList<TroubleKeyword>();
-                startDialog(new PingingFor_IntialDescription());
-                /*currentFinalistIndex++;
+                currentFinalistIndex++;
                 if(currentFinalistIndex < potentialTroubleTasks.size())
                 {
                     startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
@@ -1391,7 +1269,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 else
                 {
                     startDialog(new PingingFor_YourOwnTask());
-                }*/
+                }
             }
 
         }
@@ -1411,34 +1289,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 usedKeywords.add(currentKeyword);
             }
 
-            if(potentialTroubleTasks.size() == 1)
-            {
-                Log.e("TTDemo", "Arf");
-                createNewAlert();
-                startDialogAfterCurrentDialog(new PingingFor_Scripted1());
-
-            }
-            else if (potentialTroubleTasks.size() == 0)
-            {
-                startDialog(new PingingFor_YourOwnTask());
-            }
-            else
-            {
-                currentKeyword = getMostUsefulKeyword();
-                if(currentKeyword != null)
-                {
-                    Log.i("TTDemo", "currentKeyword is not null, moving to Task tag elimination");
-                    //usedKeywords.add(currentKeyword);
-                    startDialog(new PingingFor_MatchesKeyword(currentKeyword));
-                }
-                else
-                {
-                    Log.i("TTDemo", "currentKeyword is null, moving to Task finalist elimination");
-                    currentFinalistIndex = 0;
-                    Log.i("TTDemo", "currentTask Finalist: " + potentialTroubleTasks.get(currentFinalistIndex).getPromptQuestion());
-                    startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
-                }
-            }
+            resolveUpdatedPotentialTasks();
 
         }
         else

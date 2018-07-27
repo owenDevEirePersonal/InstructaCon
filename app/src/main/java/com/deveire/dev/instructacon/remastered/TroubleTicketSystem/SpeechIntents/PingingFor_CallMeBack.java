@@ -11,13 +11,13 @@ import java.util.HashMap;
  * Created by owenryan on 20/04/2018.
  */
 
-public class PingingFor_ScriptedB1 extends SpeechIntent
+public class PingingFor_CallMeBack extends SpeechIntent
 {
-    public PingingFor_ScriptedB1()
+    public PingingFor_CallMeBack()
     {
-        super("PingingFor_ScriptedB1");
+        super("PingingFor_CallMeBack");
         setFillInIntent(false);
-        setSpeechPrompt("To get to meeting Room 7, head south and take the first right turn, then the 1st left turn, meeting room 7 will be the first door on the left. Will I inform people that you are on your way? ");
+        setSpeechPrompt("Dan your request has been logged and our team member will call you back on 0872312567 within 15 minutes is this OK?");
         HashMap<String, ArrayList<String>> responses = new HashMap<>();
         responses.put("Yes", SpeechIntent.compileSynonyms(new String[]{"ok", "yes", "okay", "correct", "yeah", "it does"}));
         responses.put("No", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "it doesn't", "not"}));
