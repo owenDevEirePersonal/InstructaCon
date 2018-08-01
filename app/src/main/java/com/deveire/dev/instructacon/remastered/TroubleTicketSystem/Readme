@@ -6,7 +6,7 @@ Classes:
 TroubleTask - The end result of the system. Each Trouble Task represents an alert/task/activity/repair that will need to be performed
 to deal with the user's trouble ticket. Trouble Tasks has a description of the task, a description of the requirements and a list of TroubleTags.
 
-TroubleTag - A keyword that can be used to tag a TroubleTask to allow for determining what's involved with the task. Each Keyword has the keyword, a list of synomyns
+TroubleTag - A keyword that can be used to tag a TroubleTask to allow for determining what's involved with the task. Each Keyword has the keyword, a list of synonyms
 for the keyword and a PromptQuestion that intructacon asks when trying to rule out a tag.
 
 Speech Intents:

@@ -26,12 +26,12 @@ public class PingingFor_MatchesOneOfKeywords extends SpeechIntent
             if(i == keywordsToMatch.length - 1)
             {
                 //fullPrompt += aKeyword.getKeyword() + ". ";
-                responses.put(aKeyword.getKeyword(), aKeyword.getSynomyns());
+                responses.put(aKeyword.getKeyword(), aKeyword.getSynonyms());
             }
             else
             {
                 //fullPrompt += aKeyword.getKeyword() + " or. ";
-                responses.put(aKeyword.getKeyword(), aKeyword.getSynomyns());
+                responses.put(aKeyword.getKeyword(), aKeyword.getSynonyms());
             }
             i++;
         }

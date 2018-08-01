@@ -1,6 +1,5 @@
 package com.deveire.dev.instructacon.remastered.TroubleTicketSystem;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -10,21 +9,21 @@ import java.util.Arrays;
 
 public class TroubleKeyword
 {
-    private String keyword;
-    private ArrayList<String> synomyns;
+    private String keyword; //Keyword
+    private ArrayList<String> synonyms; //Synonyms for
     private String promptQuestion;
 
-    public TroubleKeyword(String keywordin, ArrayList<String> synomynsIn, String promptQuestionIn)
+    public TroubleKeyword(String keywordin, ArrayList<String> synonymsIn, String promptQuestionIn)
     {
         keyword = keywordin;
-        synomyns = synomynsIn;
+        synonyms = synonymsIn;
         promptQuestion = promptQuestionIn;
     }
 
-    public TroubleKeyword(String keywordin, String[] synomynsIn, String promptQuestionIn)
+    public TroubleKeyword(String keywordin, String[] synonymsIn, String promptQuestionIn)
     {
         keyword = keywordin;
-        synomyns = new ArrayList<String>(Arrays.asList(synomynsIn));
+        synonyms = new ArrayList<String>(Arrays.asList(synonymsIn));
         promptQuestion = promptQuestionIn;
     }
 
@@ -56,7 +55,7 @@ public class TroubleKeyword
             return true;
         }
 
-        for (String aString: synomyns)
+        for (String aString: synonyms)
         {
             if(aString.matches(keywordIn))
             {
@@ -76,19 +75,19 @@ public class TroubleKeyword
         this.keyword = keyword;
     }
 
-    public ArrayList<String> getSynomyns()
+    public ArrayList<String> getSynonyms()
     {
-        return synomyns;
+        return synonyms;
     }
 
-    public void setSynomyns(ArrayList<String> synomyns)
+    public void setSynonyms(ArrayList<String> synonyms)
     {
-        this.synomyns = synomyns;
+        this.synonyms = synonyms;
     }
 
     public void addSynomyn(String newSynomyn)
     {
-        this.synomyns.add(newSynomyn);
+        this.synonyms.add(newSynomyn);
     }
 
     public String getPromptQuestion()

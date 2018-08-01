@@ -87,4 +87,23 @@
         map:layout_constraintRight_toLeftOf="@+id/manager2Button"
         android:layout_marginRight="8dp"
         map:layout_constraintLeft_toRightOf="@+id/driver2Button"/>
+
+    <Button
+        android:id="@+id/pillsButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rounded_button"
+        android:text="Pill Planner Demo"
+        android:textColor="@android:color/white"
+        map:layout_constraintBottom_toTopOf="@+id/driverButton"
+        map:layout_constraintHorizontal_bias="1.0"
+        map:layout_constraintLeft_toRightOf="@+id/driver2Button"
+        map:layout_constraintRight_toLeftOf="@+id/manager2Button"
+        map:layout_constraintTop_toBottomOf="@+id/troubleTicketButton"
+        map:layout_constraintVertical_bias="0.0"
+        tools:text="Pill Planner Demo"/>
 </android.support.constraint.ConstraintLayout>

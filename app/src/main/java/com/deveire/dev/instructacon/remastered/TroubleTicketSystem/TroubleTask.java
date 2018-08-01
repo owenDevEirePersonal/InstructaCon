@@ -8,17 +8,21 @@ import java.util.ArrayList;
 
 public class TroubleTask
 {
-    private String Description;
-    private String promptQuestion;
-    private ArrayList<TroubleKeyword> tags;
-    private String requirements;
+    private String Description; //Description of the Task
+    private String promptQuestion; //The question asked when determining if this is the intended task
+    private ArrayList<TroubleKeyword> tags; //List of tags(keywords) associated with this task, e.g. Sink, Plumbing, Pipe, Water Leak
+    private String requirements;    //A description of the materials and tools required to complete the task
+    private int promptImageID; //id of the image resource to be displayed when the promptQuestion is asked
+    private int troubleTicketImageID; //id of the image resource to be displayed when this task has been determined to be correct and the Description is being read out
 
-    public TroubleTask(String description, String promptQuestion, ArrayList<TroubleKeyword> tags, String requirements)
+    public TroubleTask(String description, String promptQuestion, ArrayList<TroubleKeyword> tags, String requirements, int promptImageIDin, int troubleTicketImageID)
     {
-        Description = description;
+        this.Description = description;
         this.promptQuestion = promptQuestion;
         this.tags = tags;
         this.requirements = requirements;
+        this.promptImageID = promptImageIDin;
+        this.troubleTicketImageID = troubleTicketImageID;
     }
 
     public String getDescription()
@@ -56,13 +60,24 @@ public class TroubleTask
         this.tags.add(newtag);
     }
 
-    public String getRequirements()
-    {
-        return requirements;
-    }
+    public String getRequirements() { return requirements; }
 
     public void setRequirements(String requirements)
     {
         this.requirements = requirements;
+    }
+
+    public int getPromptImageID() {return promptImageID; }
+
+    public void setPromptImageID(int promptImageID) {this.promptImageID = promptImageID;}
+
+    public int getTroubleTicketImageID()
+    {
+        return troubleTicketImageID;
+    }
+
+    public void setTroubleTicketImageID(int troubleTicketImageID)
+    {
+        this.troubleTicketImageID = troubleTicketImageID;
     }
 }

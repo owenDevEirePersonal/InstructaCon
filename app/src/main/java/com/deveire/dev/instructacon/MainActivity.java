@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.deveire.dev.instructacon.remastered.Manager2Activity;
+import com.deveire.dev.instructacon.remastered.PillsActivity;
 import com.deveire.dev.instructacon.remastered.Station2Activity;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.TroubleTicketActivity;
 
@@ -21,6 +22,8 @@ public class MainActivity extends Activity
 
     private Button troubleTicketButton;
 
+    private Button pillsButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -33,6 +36,7 @@ public class MainActivity extends Activity
         driver2Button = (Button) findViewById(R.id.driver2Button);
         manager2Button = (Button) findViewById(R.id.manager2Button);
         troubleTicketButton = (Button) findViewById(R.id.troubleTicketButton);
+        pillsButton = (Button) findViewById(R.id.pillsButton);
 
         driverButton.setOnClickListener(new View.OnClickListener()
         {
@@ -76,6 +80,15 @@ public class MainActivity extends Activity
             public void onClick(View v)
             {
                 startActivity(new Intent(getApplicationContext(), TroubleTicketActivity.class));
+            }
+        });
+
+        pillsButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                startActivity(new Intent(getApplicationContext(), PillsActivity.class));
             }
         });
     }
