@@ -77,6 +77,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private TextToSpeech toSpeech;
     //[/End of TextToSpeech Variables]
 
+    //[Alert Variables]
+    private ArrayList<TroubleEmployee> allEmployees;
+    private ArrayList<TroubleAlert> allAlerts;
+    //[End of Alert Variables]
+
     //[Troubler Variables]
     private String deviceLocationName;
 
@@ -96,6 +101,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private PingingFor_YesNo pingingFor_PlumberIsThereGas;
 
     private Switch locationSwitch;
+    private String lastSwipedID;
 
     private final String PLUMBER_TAG_UUID = "0x0456b2527d3680";
 
@@ -118,10 +124,12 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 if(isChecked)
                 {
                     locationSwitch.setText("Lab Location");
+                    deviceLocationName = "Lab";
                 }
                 else
                 {
                     locationSwitch.setText("Bathroom Location");
+                    deviceLocationName = "Bathroom";
                 }
             }
         });
@@ -142,6 +150,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag");
         wl.acquire();
 
+        setupUsers();
+        setupAlerts();
         setupTroubler();
 
         showImage(R.drawable.menu);
@@ -226,6 +236,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void swipeActionHandler(final String id)
     {
+        lastSwipedID = id;
         runOnUiThread(new Runnable()
         {
             @Override
@@ -235,19 +246,43 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 debugText.setText("Card Swiped, begining");
                 Log.i("TTDemo", debugText.getText().toString());
                 showImage(R.drawable.menu);
-                if(id.matches(PLUMBER_TAG_UUID) && locationSwitch.isChecked())
+
+                ArrayList<TroubleAlert> employeesAlerts = getAlertsForID(id);
+                if(employeesAlerts.size() > 0)
                 {
-                    startDialog(pingingFor_PlumberIsThereGas);
-                }
-                else if(id.matches(PLUMBER_TAG_UUID) && !locationSwitch.isChecked())
-                {
-                    toSpeech.speak("Warning: The Electrician has not yet isolated the power supply to the Fan Assisted Heater, do not proceed with repairs.", TextToSpeech.QUEUE_FLUSH, null, "WarningPowerSupplyNotIsolated");
-                    startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+                    toSpeech.speak("You have new Alerts:", TextToSpeech.QUEUE_FLUSH, null, "NewAlerts");
+                    int i = 1;
+                    boolean temp_DeleteThisAfterDemo_isGasBreak = false;
+                    for (TroubleAlert anAlert : employeesAlerts)
+                    {
+                        if (getEmployeeFromID(id).getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Seal leaks in the ducts in the Fume Hood."))
+                        {
+                            temp_DeleteThisAfterDemo_isGasBreak = true;
+                            break;
+                        }
+                        processAlert(anAlert, i, id);
+                        i++;
+                    }
+
+                    if (temp_DeleteThisAfterDemo_isGasBreak)
+                    {
+                        startDialog(pingingFor_PlumberIsThereGas);
+                    }
+                    else
+                    {
+                        toSpeech.speak("End of Alerts", TextToSpeech.QUEUE_ADD, null, "EndOfAlerts");
+                        startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+                    }
                 }
                 else
                 {
                     startDialog(new PingingFor_TroublerStart());
                 }
+
+                /*if(id.matches(PLUMBER_TAG_UUID) && locationSwitch.isChecked())
+                {
+                    startDialog(pingingFor_PlumberIsThereGas);
+                }*/
             }
         });
 
@@ -322,12 +357,38 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         imageTimer.purge();
     }
 
+    private ArrayList<TroubleAlert> getAlertsForID(String id)
+    {
+        ArrayList<TroubleAlert> matchingAlerts = new ArrayList<TroubleAlert>();
+        for (TroubleAlert aAlert: allAlerts)
+        {
+            if(aAlert.getAssignedEmployee() != null && aAlert.getAssignedEmployee().getTagUUID().matches(id))
+            {
+                matchingAlerts.add(aAlert);
+            }
+        }
+        return matchingAlerts;
+    }
+
+    private TroubleEmployee getEmployeeFromID(String id)
+    {
+        for (TroubleEmployee a: allEmployees)
+        {
+            if(a.getTagUUID().matches(id))
+            {
+                return a;
+            }
+        }
+        return new TroubleEmployee();
+    }
+
+
 //+++++++++++++++++++++++++++++++Troubler Code++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     private void setupTroubler()
     {
-        deviceLocationName = "Joe's Egg Diner";
+        deviceLocationName = "Bathroom";
 
         allTroubleTasks = new ArrayList<TroubleTask>();
         potentialTroubleTasks = new ArrayList<TroubleTask>();
@@ -397,6 +458,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         addToKnownKeywords(newTask);*/
 
         labDemoSetup();
+        bathroomDemoSetup();
     }
 
     private void labDemoSetup()
@@ -468,6 +530,29 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTask = new TroubleTask("Unclog the stainless steel sink's drain.", "Is the problem a blocked drain in the stainless steel sink?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.stainlesssteelsinktt);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
+    }
+
+    private void bathroomDemoSetup()
+    {
+        TroubleTask newTask;
+
+        TroubleKeyword Tag_Bathroom = new TroubleKeyword("Bathroom", new String[]{"Bathroom"}, "Is the problem in a Bathroom?");
+        TroubleKeyword Tag_Lab = new TroubleKeyword("Lab", new String[]{"Lab", "Laboratory"}, "Is the problem in a Laboratory?");
+        //allKnownKeywords.add(Tag_Bathroom);
+        //allKnownKeywords.add(Tag_Lab);
+
+        TroubleKeyword Tag_StrangeNoise = new TroubleKeyword("Strange Noise", new String[]{"making noise", "strange noise", "odd noise", "vibrations", "vibrating", "rumbling", "rattling"}, "Is the machine making a strange noise or emitting unusual vibrations?");
+        TroubleKeyword Tag_LiquidLeak = new TroubleKeyword("Liquid Leak", new String[]{"water", "leaking water", "wet", "liquid", "spray", "leak", "puddle", "pool", "puddles", "pools"}, "Is there liquid leaking from the machine or on the ground near the machine?");
+        TroubleKeyword Tag_BlockedDrain = new TroubleKeyword("Blocked Drain", new String[]{"blocked drain", "drain blockage", "drain is blocked", "drain"}, "Does it have a drain and is it blocked?");
+
+        TroubleKeyword Tag_Toilet = new TroubleKeyword("Toilet", new String[]{"toilet", "john", "water closet"},"Is the problem with a toilet?");
+        TroubleKeyword Tag_Sink = new TroubleKeyword("Sink", new String[]{"sink", "wash basin", "washing basin", "sinks", "tap", "taps"}, "Is the problem with a sink?");
+        TroubleKeyword Tag_Ceiling = new TroubleKeyword("Ceiling", new String[]{"ceiling", "roof"}, "Is the problem with the ceiling?");
+        TroubleKeyword Tag_Floor = new TroubleKeyword("Floor", new String[]{"floor", "tiles", "carpet", "ground"}, "Is the problem something to do with the floor?");
+        TroubleKeyword Tag_Urinal = new TroubleKeyword("Urinal", new String[]{"urinal"}, "Is the problem with the Urinal?");
+        TroubleKeyword Tag_Heater = new TroubleKeyword("Heater", new String[]{"heater", "fan", "radiator"}, "Is the problem something to do with the fan assisted heater?");
+
+        ArrayList<TroubleKeyword> newTaskTags = new ArrayList<TroubleKeyword>();
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(Tag_LiquidLeak);
@@ -524,6 +609,17 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTask = new TroubleTask("Clean up water on the floor.", "Is there water covering the floor?", newTaskTags, "A mop and a bucket", R.drawable.elements_floor, R.drawable.tt_water);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
+    }
+
+    private void setupUsers()
+    {
+        allEmployees = new ArrayList<TroubleEmployee>();
+        allEmployees.add(new TroubleEmployee("Frank Alderman",PLUMBER_TAG_UUID,"Plumber"));
+    }
+
+    private void setupAlerts()
+    {
+        allAlerts = new ArrayList<TroubleAlert>();
     }
 
     private void addToKnownKeywords(TroubleTask aTask)
@@ -695,6 +791,9 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         toSpeech.speak("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription(), TextToSpeech.QUEUE_FLUSH, null, "Final Alert Creation");
         outputText.setText("Creating New Alert: " + potentialTroubleTasks.get(currentFinalistIndex).getDescription());
         showImage(potentialTroubleTasks.get(currentFinalistIndex).getTroubleTicketImageID());
+        TroubleAlert newAlert = new TroubleAlert(potentialTroubleTasks.get(currentFinalistIndex), getEmployeeFromID(lastSwipedID), deviceLocationName);
+        newAlert.setAssignedEmployee(getEmployeeFromID(PLUMBER_TAG_UUID));
+        allAlerts.add(newAlert);
     }
 
     private void resolveUpdatedPotentialTasks()
@@ -724,6 +823,26 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 Log.i("TTDemo", "currentTask Finalist: " + potentialTroubleTasks.get(currentFinalistIndex).getPromptQuestion());
                 showImage(potentialTroubleTasks.get(currentFinalistIndex).getPromptImageID());
                 startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
+            }
+        }
+    }
+
+    private void processAlert(TroubleAlert anAlert ,int i, String id)
+    {
+        if(anAlert.getLocation().matches(deviceLocationName))
+        {
+            TroubleEmployee anEmployee = getEmployeeFromID(id);
+            if (anEmployee.getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Fix the faulty Fan assisted heater."))
+            {
+                toSpeech.speak("Warning: The Electrician has not yet isolated the power supply to the Fan Assisted Heater, do not proceed with repairs.", TextToSpeech.QUEUE_ADD, null, "WarningPowerSupplyNotIsolated");
+            }
+            else if (anEmployee.getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Seal leaks in the ducts in the Fume Hood."))
+            {
+                //startDialog();
+            }
+            else
+            {
+                toSpeech.speak(i + ". " + anAlert.getTask().getDescription(), TextToSpeech.QUEUE_ADD, null, "alert" + i);
             }
         }
     }
