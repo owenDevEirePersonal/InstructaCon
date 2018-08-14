@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
 public class TroubleTicketActivity extends Activity implements RecognitionListener
 {
@@ -466,7 +465,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_BlockedDrain);
         newTaskTags.add(Tag_LiquidLeak);
         newTaskTags.add(Tag_Lab);
-        newTask = new TroubleTask("Unclog the stainless steel sink's drain.", "Is the problem a blocked drain in the stainless steel sink?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.sinktt);
+        newTask = new TroubleTask("Unclog the stainless steel sink's drain.", "Is the problem a blocked drain in the stainless steel sink?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.stainlesssteelsinktt);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -474,7 +473,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_LiquidLeak);
         newTaskTags.add(Tag_Bathroom);
         newTaskTags.add(Tag_Toilet);
-        newTask = new TroubleTask("Fix the toilet's leaking Cistern.", "Is the problem that one of the toilet's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_toilet, R.drawable.elements_toilet);
+        newTask = new TroubleTask("Fix the toilet's leaking Cistern.", "Is the problem that one of the toilet's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_toilet, R.drawable.tt_wc);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -482,7 +481,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_BlockedDrain);
         newTaskTags.add(Tag_Bathroom);
         newTaskTags.add(Tag_Toilet);
-        newTask = new TroubleTask("Clear the toilet's clog.", "Is the problem that the toilet is clogged?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.elements_toilet, R.drawable.elements_toilet);
+        newTask = new TroubleTask("Clear the toilet's clog.", "Is the problem that the toilet is clogged?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.elements_toilet, R.drawable.tt_wc);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -490,7 +489,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_BlockedDrain);
         newTaskTags.add(Tag_Bathroom);
         newTaskTags.add(Tag_Sink);
-        newTask = new TroubleTask("Clear the sink's clog.", "Is the problem that the sink's drain is clogged?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.sink);
+        newTask = new TroubleTask("Fix the leaking sink and unclog it's drain.", "Is the problem that the sink is leaking?", newTaskTags, "Pipe wench, drain cleaner, sealant, plunger and a bucket", R.drawable.elements_sink, R.drawable.tt_sink);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -498,7 +497,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_LiquidLeak);
         newTaskTags.add(Tag_Urinal);
         newTaskTags.add(Tag_Bathroom);
-        newTask = new TroubleTask("Fix the leaking Urinal Cistern", "Is the problem that one of the urinal's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_urinal, R.drawable.elements_urinal);
+        newTask = new TroubleTask("Fix the leaking Urinal Cistern", "Is the problem that one of the urinal's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_urinal, R.drawable.tt_urinal);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -506,7 +505,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_LiquidLeak);
         newTaskTags.add(Tag_Ceiling);
         newTaskTags.add(Tag_Bathroom);
-        newTask = new TroubleTask("Fix the leaking water pipe in the ceiling.", "Is the problem that the ceiling is leaking water?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_ceiling, R.drawable.elements_ceiling);
+        newTask = new TroubleTask("Fix the leaking water pipe in the ceiling.", "Is the problem that the ceiling is leaking water?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_ceiling, R.drawable.tt_ceiling);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -514,7 +513,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_StrangeNoise);
         newTaskTags.add(Tag_Heater);
         newTaskTags.add(Tag_Bathroom);
-        newTask = new TroubleTask("Fix the faulty Fan assisted heater.", "Is the problem that the fan assisted heater is not working?", newTaskTags, "Pipe wench, sealant, replacement fan, electrician to turn off the power", R.drawable.elements_hvac, R.drawable.elements_hvac);
+        newTask = new TroubleTask("Fix the faulty Fan assisted heater.", "Is the problem that the fan assisted heater is not working?", newTaskTags, "Pipe wench, sealant, replacement fan, electrician to turn off the power", R.drawable.elements_hvac, R.drawable.tt_fan);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
@@ -522,7 +521,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags.add(Tag_LiquidLeak);
         newTaskTags.add(Tag_Floor);
         newTaskTags.add(Tag_Bathroom);
-        newTask = new TroubleTask("Clean up water on the floor.", "Is there water covering the floor?", newTaskTags, "A mop and a bucket", R.drawable.elements_floor, R.drawable.elements_floor);
+        newTask = new TroubleTask("Clean up water on the floor.", "Is there water covering the floor?", newTaskTags, "A mop and a bucket", R.drawable.elements_floor, R.drawable.tt_water);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
     }
