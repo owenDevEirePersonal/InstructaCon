@@ -14,7 +14,9 @@ import android.speech.tts.UtteranceProgressListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +24,7 @@ import com.deveire.dev.instructacon.R;
 import com.deveire.dev.instructacon.remastered.NfcScanner;
 import com.deveire.dev.instructacon.remastered.SpeechIntent;
 import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_Clarification;
+import com.deveire.dev.instructacon.remastered.SpeechIntents.PingingFor_YesNo;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_IntialDescription;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesKeyword;
 import com.deveire.dev.instructacon.remastered.TroubleTicketSystem.SpeechIntents.PingingFor_MatchesOneOfKeywords;
@@ -37,6 +40,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 
 public class TroubleTicketActivity extends Activity implements RecognitionListener
 {
@@ -90,6 +94,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private PingingFor_MatchesOneOfKeywords currentMatchesOneOfKeywords;
     //[End of Troubler Variables]
 
+    private PingingFor_YesNo pingingFor_PlumberIsThereGas;
+
+    private Switch locationSwitch;
+
+    private final String PLUMBER_TAG_UUID = "0x0456b2527d3680";
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -99,6 +108,28 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
         debugText = (TextView) findViewById(R.id.debugText);
         outputText = (TextView) findViewById(R.id.outputText);
+
+        locationSwitch = (Switch) findViewById(R.id.locationSwitch);
+        locationSwitch.setText("Lab Location");
+        locationSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
+        {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+            {
+                if(isChecked)
+                {
+                    locationSwitch.setText("Lab Location");
+                }
+                else
+                {
+                    locationSwitch.setText("Bathroom Location");
+                }
+            }
+        });
+
+        pingingFor_PlumberIsThereGas = new PingingFor_YesNo();
+        pingingFor_PlumberIsThereGas.setName("pingingFor_PlumberIsThereGas");
+        pingingFor_PlumberIsThereGas.setSpeechPrompt("Has the gas sensor gone off?");
 
         coverImage = (ImageView) findViewById(R.id.coverImage);
 
@@ -194,7 +225,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         swipeActionHandler(NfcScanner.getTagIDFromIntent(intent));
     }
 
-    private void swipeActionHandler(String id)
+    private void swipeActionHandler(final String id)
     {
         runOnUiThread(new Runnable()
         {
@@ -205,7 +236,19 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 debugText.setText("Card Swiped, begining");
                 Log.i("TTDemo", debugText.getText().toString());
                 showImage(R.drawable.menu);
-                startDialog(new PingingFor_TroublerStart());
+                if(id.matches(PLUMBER_TAG_UUID) && locationSwitch.isChecked())
+                {
+                    startDialog(pingingFor_PlumberIsThereGas);
+                }
+                else if(id.matches(PLUMBER_TAG_UUID) && !locationSwitch.isChecked())
+                {
+                    toSpeech.speak("Warning: The Electrician has not yet isolated the power supply to the Fan Assisted Heater, do not proceed with repairs.", TextToSpeech.QUEUE_FLUSH, null, "WarningPowerSupplyNotIsolated");
+                    startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+                }
+                else
+                {
+                    startDialog(new PingingFor_TroublerStart());
+                }
             }
         });
 
@@ -361,14 +404,29 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     {
         TroubleTask newTask;
 
+        TroubleKeyword Tag_Bathroom = new TroubleKeyword("Bathroom", new String[]{"Bathroom"}, "Is the problem in a Bathroom?");
+        TroubleKeyword Tag_Lab = new TroubleKeyword("Lab", new String[]{"Lab", "Laboratory"}, "Is the problem in a Laboratory?");
+        //allKnownKeywords.add(Tag_Bathroom);
+        //allKnownKeywords.add(Tag_Lab);
+
         TroubleKeyword Tag_StrangeNoise = new TroubleKeyword("Strange Noise", new String[]{"making noise", "strange noise", "odd noise", "vibrations", "vibrating", "rumbling", "rattling"}, "Is the machine making a strange noise or emitting unusual vibrations?");
         TroubleKeyword Tag_LiquidLeak = new TroubleKeyword("Liquid Leak", new String[]{"water", "leaking water", "wet", "liquid", "spray", "leak", "puddle", "pool", "puddles", "pools"}, "Is there liquid leaking from the machine or on the ground near the machine?");
         TroubleKeyword Tag_GasLeak = new TroubleKeyword("Gas Leak", new String[]{"gas", "gas leak", "leaking gas"}, "Do you smell gas near the machine?");
         TroubleKeyword Tag_BlockedDrain = new TroubleKeyword("Blocked Drain", new String[]{"blocked drain", "drain blockage", "drain is blocked", "drain"}, "Does it have a drain and is it blocked?");
         TroubleKeyword Tag_Smoking = new TroubleKeyword("Smoking", new String[]{"smoking", "smoke", "fumes"}, "Is the machine smoking?");
 
+        TroubleKeyword Tag_Toilet = new TroubleKeyword("Toilet", new String[]{"toilet", "john", "water closet"},"Is the problem with a toilet?");
+        TroubleKeyword Tag_Sink = new TroubleKeyword("Sink", new String[]{"sink", "wash basin", "washing basin", "sinks", "tap", "taps"}, "Is the problem with a sink?");
+        TroubleKeyword Tag_Ceiling = new TroubleKeyword("Ceiling", new String[]{"ceiling", "roof"}, "Is the problem with the ceiling?");
+        TroubleKeyword Tag_Floor = new TroubleKeyword("Floor", new String[]{"floor", "tiles", "carpet", "ground"}, "Is the problem something to do with the floor?");
+        TroubleKeyword Tag_Urinal = new TroubleKeyword("Urinal", new String[]{"urinal"}, "Is the problem with the Urinal?");
+        TroubleKeyword Tag_Heater = new TroubleKeyword("Heater", new String[]{"heater", "fan", "radiator"}, "Is the problem something to do with the fan assisted heater?");
+
+
         ArrayList<TroubleKeyword> newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_Smoking);
         newTaskTags.add(Tag_GasLeak);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Fix a gas leak in the Ovens. Please vacant the room immediately and avoid touching anything electrical.", "Is the problem that the oven has a gas leak?", newTaskTags, "Spanner,Flat Head Screwdriver and 10 type 5 screws", R.drawable.oven, R.drawable.gasleak);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
@@ -376,20 +434,22 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(Tag_StrangeNoise);
         newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Fix damaged bearings on the mixer", "Is the problem that the mixer's bearings have been damaged?", newTaskTags, "Pipe Wrench, replacement C-15 mixer bearings and grease", R.drawable.mixer, R.drawable.mixertt);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(Tag_StrangeNoise);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Fix the broken scales.", "Is the problem that the scales are not working?", newTaskTags, "5 Type 3 Screws, screwdriver, 3 feet of solder, and a soldering iron", R.drawable.scales, R.drawable.scalestt);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
 
         newTaskTags = new ArrayList<TroubleKeyword>();
-        newTaskTags.add(Tag_StrangeNoise);
         newTaskTags.add(Tag_Smoking);
         newTaskTags.add(Tag_GasLeak);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Seal leaks in the ducts in the Fume Hood.", "Is the problem that there are fumes coming out of the ducts on the Fume Hood?", newTaskTags, "a ladder, 2 tubes of sealant and a Sealant Gun", R.drawable.furne, R.drawable.furnett);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
@@ -397,6 +457,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(Tag_StrangeNoise);
         newTaskTags.add(Tag_GasLeak);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Fix the Centrifugal Separator", "Is the problem that the Centrifugal Separator is grinding?", newTaskTags, "Full toolbox, Centrifugal Repair manual, replacement part J-23 and knowledge of how to spell Centrifugal", R.drawable.separator, R.drawable.separatortt);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
@@ -404,7 +465,64 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         newTaskTags = new ArrayList<TroubleKeyword>();
         newTaskTags.add(Tag_BlockedDrain);
         newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Lab);
         newTask = new TroubleTask("Unclog the stainless steel sink's drain.", "Is the problem a blocked drain in the stainless steel sink?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.sinktt);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Bathroom);
+        newTaskTags.add(Tag_Toilet);
+        newTask = new TroubleTask("Fix the toilet's leaking Cistern.", "Is the problem that one of the toilet's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_toilet, R.drawable.elements_toilet);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_BlockedDrain);
+        newTaskTags.add(Tag_Bathroom);
+        newTaskTags.add(Tag_Toilet);
+        newTask = new TroubleTask("Clear the toilet's clog.", "Is the problem that the toilet is clogged?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.elements_toilet, R.drawable.elements_toilet);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_BlockedDrain);
+        newTaskTags.add(Tag_Bathroom);
+        newTaskTags.add(Tag_Sink);
+        newTask = new TroubleTask("Clear the sink's clog.", "Is the problem that the sink's drain is clogged?", newTaskTags, "Pipe wench, drain cleaner, plunger and a bucket", R.drawable.sink, R.drawable.sink);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Urinal);
+        newTaskTags.add(Tag_Bathroom);
+        newTask = new TroubleTask("Fix the leaking Urinal Cistern", "Is the problem that one of the urinal's cistern is leaking?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_urinal, R.drawable.elements_urinal);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Ceiling);
+        newTaskTags.add(Tag_Bathroom);
+        newTask = new TroubleTask("Fix the leaking water pipe in the ceiling.", "Is the problem that the ceiling is leaking water?", newTaskTags, "Pipe wench, sealant, plunger and a bucket", R.drawable.elements_ceiling, R.drawable.elements_ceiling);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_StrangeNoise);
+        newTaskTags.add(Tag_Heater);
+        newTaskTags.add(Tag_Bathroom);
+        newTask = new TroubleTask("Fix the faulty Fan assisted heater.", "Is the problem that the fan assisted heater is not working?", newTaskTags, "Pipe wench, sealant, replacement fan, electrician to turn off the power", R.drawable.elements_hvac, R.drawable.elements_hvac);
+        allTroubleTasks.add(newTask);
+        addToKnownKeywords(newTask);
+
+        newTaskTags = new ArrayList<TroubleKeyword>();
+        newTaskTags.add(Tag_LiquidLeak);
+        newTaskTags.add(Tag_Floor);
+        newTaskTags.add(Tag_Bathroom);
+        newTask = new TroubleTask("Clean up water on the floor.", "Is there water covering the floor?", newTaskTags, "A mop and a bucket", R.drawable.elements_floor, R.drawable.elements_floor);
         allTroubleTasks.add(newTask);
         addToKnownKeywords(newTask);
     }
@@ -545,10 +663,17 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     private void collectTagsFromLocation()
     {
         Log.i("TTDemo", "Collecting tags from location: " + deviceLocationName);
-        switch (deviceLocationName)
+        if(locationSwitch.isChecked())
         {
-            case "Joe's Egg Diner":  updatePotentialTasks(findTagInList("Eggs"), true); break;
-            default: break;
+            //lab
+            updatePotentialTasks(findTagInList("Lab"), true);
+            updatePotentialTasks(findTagInList("Bathroom"), false);
+        }
+        else
+        {
+            //bathroom
+            updatePotentialTasks(findTagInList("Lab"), false);
+            updatePotentialTasks(findTagInList("Bathroom"), true);
         }
     }
 
@@ -652,33 +777,41 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                     @Override
                     public void onDone(String utteranceId)
                     {
-                        Log.i("Speech", utteranceId + " DONE!");
-                        if (utteranceId.matches(new PingingFor_Clarification().getName())
-                                || utteranceId.matches(new PingingFor_CallMeBack().getName())
-                                || utteranceId.matches(new PingingFor_GetDirections_RoomA().getName())
-                                || utteranceId.matches(new PingingFor_GetDirections_RoomB().getName())
-                                || utteranceId.matches(new PingingFor_TroublerStart().getName())
-                                || utteranceId.matches(new PingingFor_IntialDescription().getName())
-                                || utteranceId.matches(new PingingFor_YourOwnTask().getName())
-                                || utteranceId.matches(currentMatchesOneOfKeywords.getName())
-                                || utteranceId.matches(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)).getName())
-                                || utteranceId.matches(new PingingFor_MatchesKeyword(currentKeyword).getName()))
+                        try
                         {
-                            runOnUiThread(new Runnable()
+                            Log.i("Speech", utteranceId + " DONE!");
+                            if (utteranceId.matches(new PingingFor_Clarification().getName())
+                                    || utteranceId.matches(new PingingFor_CallMeBack().getName())
+                                    || utteranceId.matches(new PingingFor_GetDirections_RoomA().getName())
+                                    || utteranceId.matches(new PingingFor_GetDirections_RoomB().getName())
+                                    || utteranceId.matches(new PingingFor_TroublerStart().getName())
+                                    || utteranceId.matches(new PingingFor_IntialDescription().getName())
+                                    || utteranceId.matches(new PingingFor_YourOwnTask().getName())
+                                    || utteranceId.matches(currentMatchesOneOfKeywords.getName())
+                                    || utteranceId.matches(pingingFor_PlumberIsThereGas.getName())
+                                    || utteranceId.matches(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)).getName())
+                                    || utteranceId.matches(new PingingFor_MatchesKeyword(currentKeyword).getName()))
                             {
-                                @Override
-                                public void run()
+                                runOnUiThread(new Runnable()
                                 {
-                                    startRecogListening(pingingRecogFor);
-                                }
-                            });
+                                    @Override
+                                    public void run()
+                                    {
+                                        startRecogListening(pingingRecogFor);
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                Log.e("Speech", "Unrecognised utteranceID");
+                            }
+                            //TODO: Add calls to startRecogListening for each SpeechIntent
+                            //toSpeech.shutdown();
                         }
-                        else
+                        catch (Exception e)
                         {
-                            Log.e("Speech", "Unrecognised utteranceID");
+                            Log.e("Speech", "An exception occured in OnDone in the Utterance listener, while identifying the utteranceID: " + e.toString());
                         }
-                        //TODO: Add calls to startRecogListening for each SpeechIntent
-                        //toSpeech.shutdown();
                     }
 
                     @Override
@@ -1076,7 +1209,14 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 eliminatedTroubleTasks = new ArrayList<TroubleTask>();
                 usedKeywords = new ArrayList<TroubleKeyword>();
                 startDialog(new PingingFor_IntialDescription());
-                showImage(R.drawable.elements_2);
+                if(locationSwitch.isChecked())
+                {
+                    showImage(R.drawable.elements_2);
+                }
+                else
+                {
+                    showImage(R.drawable.elements);
+                }
             }
             else if(result.matches("Directions to room A"))
             {
@@ -1119,7 +1259,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             {
                 toSpeech.speak("To use me, swipe again and use one of the following commands. . " +
                                 "If there you wish to test the Troubler Trouble Ticketing system, use the command. Raise Trouble Ticket. . " +
-                                "If you want directions to a room, use the command. Give me directions to room 7. For example. . " +
+                                "If you want directions to a room, use the command. Give me directions to room A. For example. . " +
                                 "If you want a staff member to contact you, use the command. Call me back. . ", TextToSpeech.QUEUE_FLUSH, null, "HelpSpeech");
                 toSpeech.speak("Thank you and have a nice day", TextToSpeech.QUEUE_ADD, null, "EndOfScript");
             }
@@ -1143,6 +1283,19 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         {
             toSpeech.speak("Thank you Dan and have a nice day", TextToSpeech.QUEUE_FLUSH, null, "EndOfScript");
         }
+        else if(pingingFor.getName().matches(pingingFor_PlumberIsThereGas.getName()))
+        {
+            if(result.matches("Yes"))
+            {
+                toSpeech.speak("Danger Do not Enter the Room.", TextToSpeech.QUEUE_FLUSH, null, "DoNotEnter");
+                startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+            }
+            else if(result.matches("No"))
+            {
+                toSpeech.speak("Very good. Please proceed with your issued work order and tag out when your work is completed.", TextToSpeech.QUEUE_FLUSH, null, "DoEnter");
+                startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+            }
+        }
         else if (pingingFor.getName().matches(new PingingFor_IntialDescription().getName()))
         {
             Log.i("TTDemo", "PingingFor_IntialDescription: User has provided an Intial Description of the problem as: " + result);
@@ -1157,11 +1310,15 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             {
                 startDialog(new PingingFor_MatchesKeyword(currentKeyword));
             }
-            else
+            else if(potentialTroubleTasks.size() == 1)
             {
                 currentFinalistIndex = 0;
                 showImage(potentialTroubleTasks.get(currentFinalistIndex).getPromptImageID());
                 startDialog(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)));
+            }
+            else
+            {
+                startDialog(new PingingFor_YourOwnTask());
             }
         }
         else if (pingingFor.getName().matches(new PingingFor_YourOwnTask().getName()))
@@ -1200,6 +1357,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             //TODO: consider whether or not to add these keywords as used or unused
             resolveUpdatedPotentialTasks();
         }
+        //Put other dialog responses above this line, otherwise you risk a null pointer exception/array out of bounds exception
+        //TODO: add error catching for these exceptions
         else if(pingingFor.getName().matches(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)).getName())) //Finalist Stage: this dialog is run when all there are no unused tags that could narrow the number of potential tasks.
         {
             if(result.matches("Yes"))
@@ -1259,7 +1418,6 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
 
 /*
-
 
 
  */
