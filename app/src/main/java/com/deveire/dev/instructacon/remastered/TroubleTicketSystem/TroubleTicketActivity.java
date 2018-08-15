@@ -80,6 +80,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
     //[Alert Variables]
     private ArrayList<TroubleEmployee> allEmployees;
     private ArrayList<TroubleAlert> allAlerts;
+    private int currentAlertReadoutIndex;
+    private int numberOfAlertsReadOut;
     //[End of Alert Variables]
 
     //[Troubler Variables]
@@ -125,11 +127,13 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 {
                     locationSwitch.setText("Lab Location");
                     deviceLocationName = "Lab";
+                    Log.i("Loc", "location is: " + deviceLocationName);
                 }
                 else
                 {
                     locationSwitch.setText("Bathroom Location");
                     deviceLocationName = "Bathroom";
+                    Log.i("Loc", "location is: " + deviceLocationName);
                 }
             }
         });
@@ -236,7 +240,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void swipeActionHandler(final String id)
     {
-        lastSwipedID = id;
+
         runOnUiThread(new Runnable()
         {
             @Override
@@ -247,37 +251,11 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
                 Log.i("TTDemo", debugText.getText().toString());
                 showImage(R.drawable.menu);
 
-                ArrayList<TroubleAlert> employeesAlerts = getAlertsForID(id);
-                if(employeesAlerts.size() > 0)
-                {
-                    toSpeech.speak("You have new Alerts:", TextToSpeech.QUEUE_FLUSH, null, "NewAlerts");
-                    int i = 1;
-                    boolean temp_DeleteThisAfterDemo_isGasBreak = false;
-                    for (TroubleAlert anAlert : employeesAlerts)
-                    {
-                        if (getEmployeeFromID(id).getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Seal leaks in the ducts in the Fume Hood."))
-                        {
-                            temp_DeleteThisAfterDemo_isGasBreak = true;
-                            break;
-                        }
-                        processAlert(anAlert, i, id);
-                        i++;
-                    }
-
-                    if (temp_DeleteThisAfterDemo_isGasBreak)
-                    {
-                        startDialog(pingingFor_PlumberIsThereGas);
-                    }
-                    else
-                    {
-                        toSpeech.speak("End of Alerts", TextToSpeech.QUEUE_ADD, null, "EndOfAlerts");
-                        startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
-                    }
-                }
-                else
-                {
-                    startDialog(new PingingFor_TroublerStart());
-                }
+                currentAlertReadoutIndex = 0;
+                lastSwipedID = id;
+                numberOfAlertsReadOut = 0;
+                toSpeech.speak("You have new Alerts:", TextToSpeech.QUEUE_FLUSH, null, "NewAlerts");
+                readOutAlerts(); //uses currentAlertReadoutIndex and lastSwipedID
 
                 /*if(id.matches(PLUMBER_TAG_UUID) && locationSwitch.isChecked())
                 {
@@ -388,7 +366,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
 
     private void setupTroubler()
     {
-        deviceLocationName = "Bathroom";
+        deviceLocationName = "Lab";
 
         allTroubleTasks = new ArrayList<TroubleTask>();
         potentialTroubleTasks = new ArrayList<TroubleTask>();
@@ -793,6 +771,7 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         showImage(potentialTroubleTasks.get(currentFinalistIndex).getTroubleTicketImageID());
         TroubleAlert newAlert = new TroubleAlert(potentialTroubleTasks.get(currentFinalistIndex), getEmployeeFromID(lastSwipedID), deviceLocationName);
         newAlert.setAssignedEmployee(getEmployeeFromID(PLUMBER_TAG_UUID));
+        Log.i("TTDemo", "Creating new alert with task description:" + newAlert.getTask().getDescription() + " and raised by: " + newAlert.getRaisedBy() + " and at location: " + newAlert.getLocation() + " and assigned to: " + newAlert.getAssignedEmployee().getTagUUID());
         allAlerts.add(newAlert);
     }
 
@@ -827,24 +806,62 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         }
     }
 
-    private void processAlert(TroubleAlert anAlert ,int i, String id)
+    private void readOutAlerts()
     {
+        boolean isReadingOutAlertResponse = false;
+        ArrayList<TroubleAlert> employeesAlerts = getAlertsForID(lastSwipedID);
+        if(employeesAlerts.size() > 0)
+        {
+            for (;employeesAlerts.size() > currentAlertReadoutIndex;)
+            {
+                TroubleAlert anAlert = employeesAlerts.get(currentAlertReadoutIndex);
+                if(processAlertReadOut(anAlert, lastSwipedID))
+                {
+                    currentAlertReadoutIndex++;
+                    isReadingOutAlertResponse = true;
+                    break;
+                }
+                else
+                {
+                    currentAlertReadoutIndex++;
+                }
+            }
+
+            if(employeesAlerts.size() <= currentAlertReadoutIndex && !isReadingOutAlertResponse)
+            {
+                toSpeech.speak("End of Alerts", TextToSpeech.QUEUE_ADD, null, "EndOfAlerts");
+                startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+            }
+        }
+        else
+        {
+            startDialog(new PingingFor_TroublerStart());
+        }
+    }
+
+    private boolean processAlertReadOut(TroubleAlert anAlert , String id)
+    {
+
+        boolean isDialogResponse = false;
         if(anAlert.getLocation().matches(deviceLocationName))
         {
+            numberOfAlertsReadOut++;
             TroubleEmployee anEmployee = getEmployeeFromID(id);
+            toSpeech.speak("Alert " + numberOfAlertsReadOut + ". " + anAlert.getTask().getDescription(), TextToSpeech.QUEUE_ADD, null, "alert" + numberOfAlertsReadOut);
+
             if (anEmployee.getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Fix the faulty Fan assisted heater."))
             {
                 toSpeech.speak("Warning: The Electrician has not yet isolated the power supply to the Fan Assisted Heater, do not proceed with repairs.", TextToSpeech.QUEUE_ADD, null, "WarningPowerSupplyNotIsolated");
+                isDialogResponse = false;
             }
             else if (anEmployee.getType().matches("Plumber") && anAlert.getTask().getDescription().matches("Seal leaks in the ducts in the Fume Hood."))
             {
-                //startDialog();
+                startDialogAfterCurrentDialog(pingingFor_PlumberIsThereGas);
+                isDialogResponse = true;
             }
-            else
-            {
-                toSpeech.speak(i + ". " + anAlert.getTask().getDescription(), TextToSpeech.QUEUE_ADD, null, "alert" + i);
-            }
+            //======>Put new custom alert responses here<======
         }
+        return isDialogResponse;
     }
 //+++++++++++++++++++++++++++++++End of Troubler Code+++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1406,13 +1423,14 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
             if(result.matches("Yes"))
             {
                 toSpeech.speak("Danger Do not Enter the Room.", TextToSpeech.QUEUE_FLUSH, null, "DoNotEnter");
-                startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+                //startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
             }
             else if(result.matches("No"))
             {
                 toSpeech.speak("Very good. Please proceed with your issued work order and tag out when your work is completed.", TextToSpeech.QUEUE_FLUSH, null, "DoEnter");
-                startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
+                //startDialogAfterCurrentDialog(new PingingFor_TroublerStart());
             }
+            readOutAlerts(); //resumes reading out alerts
         }
         else if (pingingFor.getName().matches(new PingingFor_IntialDescription().getName()))
         {
@@ -1477,6 +1495,8 @@ public class TroubleTicketActivity extends Activity implements RecognitionListen
         }
         //Put other dialog responses above this line, otherwise you risk a null pointer exception/array out of bounds exception
         //TODO: add error catching for these exceptions
+        //========>Put new Dialog Response Handlers here
+        // <========
         else if(pingingFor.getName().matches(new PingingFor_MatchesTask(potentialTroubleTasks.get(currentFinalistIndex)).getName())) //Finalist Stage: this dialog is run when all there are no unused tags that could narrow the number of potential tasks.
         {
             if(result.matches("Yes"))
