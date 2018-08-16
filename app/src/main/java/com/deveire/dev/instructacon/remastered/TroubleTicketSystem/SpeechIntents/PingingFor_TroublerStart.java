@@ -60,7 +60,7 @@ public class PingingFor_TroublerStart extends SpeechIntent
                 "way to meeting room B"}));
         responses.put("Call me back", SpeechIntent.compileSynonyms(new String[]{"call me back", "call me", "hear back from"}));
         responses.put("Help", SpeechIntent.compileSynonyms(new String[]{"help", "how do you work", "how do I use you"}));
-        responses.put("Nevermind", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "nevermind", "forget it"}));
+        responses.put("Nevermind", SpeechIntent.compileSynonyms(new String[]{"no", "false", "incorrect", "not okay", "nevermind", "forget it", "that is all", "that's all","that is everything", "that's everything"}));
         setResponses(responses);
     }
 
